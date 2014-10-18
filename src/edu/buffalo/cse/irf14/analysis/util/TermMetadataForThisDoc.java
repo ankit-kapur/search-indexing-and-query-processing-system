@@ -1,18 +1,38 @@
 package edu.buffalo.cse.irf14.analysis.util;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TermMetadataForThisDoc implements Serializable {
 	private static final long serialVersionUID = 1L;
 	int termFrequency;
 	int boosterScore;
 	char firstLetter;
+	List<Integer> positions;
 
-	public TermMetadataForThisDoc(int termFrequency, int boosterScore, char firstLetter) {
+	public TermMetadataForThisDoc(int termFrequency, int boosterScore, char firstLetter, int position) {
 		super();
 		this.termFrequency = termFrequency;
 		this.boosterScore = boosterScore;
 		this.firstLetter = firstLetter;
+
+		addPositionToList(position);
+	}
+
+	public void addPositionToList(int position) {
+		if (positions == null) {
+			positions = new ArrayList<Integer>();
+		}
+		positions.add(position);
+	}
+
+	public List<Integer> getPositions() {
+		return positions;
+	}
+
+	public void setPositions(List<Integer> positions) {
+		this.positions = positions;
 	}
 
 	public TermMetadataForThisDoc() {

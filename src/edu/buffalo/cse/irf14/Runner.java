@@ -7,7 +7,6 @@ import java.io.File;
 import java.util.Date;
 import java.util.HashMap;
 
-import edu.buffalo.cse.irf14.analysis.DateFilter;
 import edu.buffalo.cse.irf14.document.Document;
 import edu.buffalo.cse.irf14.document.Parser;
 import edu.buffalo.cse.irf14.document.ParserException;

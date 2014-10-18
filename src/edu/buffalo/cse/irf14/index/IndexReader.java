@@ -29,6 +29,7 @@ public class IndexReader {
 	public final String className = this.getClass().getName();
 
 	public Map<String, DictionaryMetadata> termDictionary = new HashMap<String, DictionaryMetadata>();
+	DocumentDictionary docDictionary = null;
 	public Map<Long, String> documentDictionary = new HashMap<Long, String>();
 	public Map<Character, Map<Long, Map<Long, TermMetadataForThisDoc>>> index;
 
@@ -97,7 +98,8 @@ public class IndexReader {
 			File docDictFile = new File(indexDirectory + IndexWriter.docuDictFileName);
 			if (docDictFile.exists()) {
 				docuDictionaryReader = new ObjectInputStream(new BufferedInputStream(new FileInputStream(docDictFile)));
-				documentDictionary = (Map<Long, String>) docuDictionaryReader.readObject();
+				docDictionary = (DocumentDictionary) docuDictionaryReader.readObject();
+				documentDictionary = docDictionary.getDocumentDictionary();
 			}
 
 			/* Get the index */

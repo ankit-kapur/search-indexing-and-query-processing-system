@@ -4,6 +4,8 @@ package edu.buffalo.cse.irf14.query;
 public class Term implements Expression {
 	
 	private String queryTerm;
+	
+	
 	boolean notFlag=false;
 	boolean barFlag=false;
 	StringBuffer sbBuffer=new StringBuffer();
