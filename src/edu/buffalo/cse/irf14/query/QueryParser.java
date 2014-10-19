@@ -136,6 +136,7 @@ public class QueryParser {
 		} catch (QueryPreProcessingException e) {
 			e.printStackTrace();
 		} catch (Exception e) {
+			e.printStackTrace();
 			throw new QueryParserException("Error Occured in QueryParser");
 		}
 		return query;

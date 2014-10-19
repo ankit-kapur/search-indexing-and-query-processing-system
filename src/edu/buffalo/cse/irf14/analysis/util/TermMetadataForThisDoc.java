@@ -65,11 +65,11 @@ public class TermMetadataForThisDoc implements Serializable {
 		this.boosterScore = boosterScore;
 	}
 
-	public char getTermText() {
+	public char getFirstLetter() {
 		return firstLetter;
 	}
 
-	public void setTermText(char firstLetter) {
+	public void setFirstLetter(char firstLetter) {
 		this.firstLetter = firstLetter;
 	}
 }

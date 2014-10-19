@@ -14,11 +14,12 @@ public class Query {
 	/*- Method to convert given parsed query into string */
 	private String parsedQuery;
 	private Map<Long, DocMetaData> documentMap;
-	private HashMap<Integer, QueryResults> resultsMap;
+	private Map<Long, QueryResults> resultsMap;
 	private static Map<Long, IndexType> queryTermList;
 
 	Query() {
 		queryTermList = new HashMap<Long, IndexType>();
+		resultsMap = new HashMap<Long, QueryResults>();
 	}
 	public static Map<Long, IndexType> getQueryTermList() {
 		return queryTermList;
@@ -40,12 +41,19 @@ public class Query {
 	public void setParsedQuery(String parsedQuery) {
 		this.parsedQuery = parsedQuery;
 	}
-	public HashMap<Integer, QueryResults> getResultsMap() {
+	public Map<Long, QueryResults> getResultsMap() {
 		return resultsMap;
 	}
-	public void setResultsMap(HashMap<Integer, QueryResults> resultsMap) {
+	public void setResultsMap(Map<Long, QueryResults> resultsMap) {
 		this.resultsMap = resultsMap;
 	}
+	public void addResultToMap(Long docId, QueryResults queryResult) {
+		if (this.resultsMap == null) {
+			resultsMap = new HashMap<Long, QueryResults>();
+		}
+		resultsMap.put(docId, queryResult);
+	}
+	
 	public Map<Long, DocMetaData> getDocumentMap() {
 		return documentMap;
 	}

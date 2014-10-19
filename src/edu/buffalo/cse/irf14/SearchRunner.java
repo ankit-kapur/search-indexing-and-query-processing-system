@@ -5,6 +5,7 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 
+import edu.buffalo.cse.irf14.query.IndexesAndDictionaries;
 import edu.buffalo.cse.irf14.query.Query;
 import edu.buffalo.cse.irf14.query.QueryParser;
 import edu.buffalo.cse.irf14.query.QueryParserException;
@@ -23,6 +24,7 @@ public class SearchRunner {
 		TFIDF, OKAPI
 	};
 
+	char mode;
 	/**
 	 * Default (and only public) constuctor
 	 * 
@@ -36,7 +38,8 @@ public class SearchRunner {
 	 *             : Stream to write output to
 	 */
 	public SearchRunner(String indexDir, String corpusDir, char mode, PrintStream stream) {
-		// TODO: IMPLEMENT THIS METHOD
+		IndexesAndDictionaries.readIndexes(indexDir);
+		this.mode = mode;
 	}
 
 	/**
@@ -106,7 +109,6 @@ public class SearchRunner {
 	public Map<String, List<String>> getQueryTerms() {
 		// TODO:IMPLEMENT THIS METHOD IFF WILDCARD BONUS ATTEMPTED
 		return null;
-
 	}
 
 	/**

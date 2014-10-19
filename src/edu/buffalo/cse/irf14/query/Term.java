@@ -7,6 +7,8 @@ import edu.buffalo.cse.irf14.analysis.Analyzer;
 import edu.buffalo.cse.irf14.analysis.AnalyzerFactory;
 import edu.buffalo.cse.irf14.analysis.Token;
 import edu.buffalo.cse.irf14.analysis.TokenStream;
+import edu.buffalo.cse.irf14.analysis.Tokenizer;
+import edu.buffalo.cse.irf14.analysis.TokenizerException;
 import edu.buffalo.cse.irf14.analysis.util.DictionaryMetadata;
 import edu.buffalo.cse.irf14.analysis.util.TermMetadataForThisDoc;
 import edu.buffalo.cse.irf14.document.FieldNames;
@@ -97,10 +99,6 @@ public class Term extends Expression {
 		String filteredQueryTerm = null;
 		Long termId;
 		Character firstChar;
-		Token token = new Token();
-		token.setTermText(queryTerm);
-		TokenStream tokenStream = new TokenStream();
-		tokenStream.addTokenToStream(token);
 		AnalyzerFactory analyzerFactory = AnalyzerFactory.getInstance();
 		Analyzer analyzer = null;
 		if (queryTerm.contains(":")) {
@@ -110,7 +108,22 @@ public class Term extends Expression {
 			if (queryTerm.contains(")")) {
 				queryTerm = queryTerm.replace(")", "");
 			}
+			
 			indexType = queryTerm.substring(0, queryTerm.indexOf(":")).toLowerCase();
+			String termText = queryTerm.substring(queryTerm.indexOf(":")+1, queryTerm.length());
+			
+//			Token token = new Token();
+//			token.setTermText(termText);
+//			TokenStream tokenStream = new TokenStream();
+//			tokenStream.addTokenToStream(token);
+
+			Tokenizer tokenizer = new Tokenizer();
+			TokenStream tokenStream = null;
+			try {
+				tokenStream = tokenizer.consume(termText);
+			} catch (TokenizerException e) {
+				e.printStackTrace();
+			}
 
 			if (indexType.equals("category")) {
 				indexTypeObject = IndexType.CATEGORY;
@@ -129,9 +142,13 @@ public class Term extends Expression {
 
 			analyzer.processThroughFilters();
 			tokenStream = analyzer.getStream();
-			token = tokenStream.getCurrent();
+			Token token = null;
+			if (tokenStream.hasNext()) {
+				token = tokenStream.next();
+			}
 			filteredQueryTerm = token.getTermText();
 		} else {
+			indexType = "term";
 			indexTypeObject = IndexType.TERM;
 			if (queryTerm.contains("(")) {
 				queryTerm = queryTerm.replace("(", "");
@@ -139,22 +156,30 @@ public class Term extends Expression {
 			if (queryTerm.contains(")")) {
 				queryTerm = queryTerm.replace(")", "");
 			}
+
+			Token token = new Token();
+			token.setTermText(queryTerm);
+			TokenStream tokenStream = new TokenStream();
+			tokenStream.addTokenToStream(token);
+			
 			analyzer = analyzerFactory.getAnalyzerForField(FieldNames.CONTENT, tokenStream);
 			analyzer.processThroughFilters();
+			
 			tokenStream = analyzer.getStream();
 			token = tokenStream.getCurrent();
 			filteredQueryTerm = token.getTermText();
 		}
 
-		String zoneName = filteredQueryTerm.substring(0, filteredQueryTerm.indexOf(":"));
-		termText = filteredQueryTerm.substring(filteredQueryTerm.indexOf(":") + 1, filteredQueryTerm.length());
-		zone = QueryUtils.getZoneTypeByZoneName(zoneName);
+		termText = filteredQueryTerm;
+		zone = QueryUtils.getZoneTypeByZoneName(indexType);
 
 		IndexReader indexReader = IndexesAndDictionaries.getIndexByType(indexTypeObject);
 		Map<String, DictionaryMetadata> termDictionary = indexReader.termDictionary;
 		DictionaryMetadata dictionaryMetadata = termDictionary.get(termText);
 		firstChar = termText.toLowerCase().charAt(0);
 		termId = dictionaryMetadata.getTermId();
+		///////// TODO NULL CHECK
+		
 		Map<Character, Map<Long, Map<Long, TermMetadataForThisDoc>>> index = indexReader.index;
 		Map<Long, TermMetadataForThisDoc> postingsMap = index.get(firstChar).get(termId);
 

@@ -5,13 +5,13 @@ import java.io.Serializable;
 public class DictionaryMetadata implements Serializable {
 	private static final long serialVersionUID = 1L;
 	long termId;
-	int frequency;
+	long frequency;
 
 	public DictionaryMetadata() {
 
 	}
 
-	public DictionaryMetadata(long termId, int frequency) {
+	public DictionaryMetadata(long termId, long frequency) {
 		super();
 		this.termId = termId;
 		this.frequency = frequency;
@@ -25,11 +25,11 @@ public class DictionaryMetadata implements Serializable {
 		this.termId = termId;
 	}
 
-	public int getFrequency() {
+	public long getFrequency() {
 		return frequency;
 	}
 
-	public void setFrequency(int frequency) {
+	public void setFrequency(long frequency) {
 		this.frequency = frequency;
 	}
 }

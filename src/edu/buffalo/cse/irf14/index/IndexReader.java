@@ -30,7 +30,7 @@ public class IndexReader {
 
 	public Map<String, DictionaryMetadata> termDictionary = new HashMap<String, DictionaryMetadata>();
 	DocumentDictionary docDictionary = null;
-	public Map<Long, String> documentDictionary = new HashMap<Long, String>();
+	public Map<Long, DocumentDictionaryEntry> documentDictionary = new HashMap<Long, DocumentDictionaryEntry>();
 	public Map<Character, Map<Long, Map<Long, TermMetadataForThisDoc>>> index;
 
 	Map<Character, ObjectInputStream> listOfReaders = null;
@@ -71,18 +71,15 @@ public class IndexReader {
 		/* Build file names, according to the index type */
 		String dictionaryFileName = null;
 		String fileNamePrefix = indexDirectory;
+		dictionaryFileName = IndexWriter.dictionaryFileName;
 		if (indexType.equals(IndexType.TERM)) {
 			fileNamePrefix += IndexWriter.termIndexFileNamePrefix;
-			dictionaryFileName = IndexWriter.termDictFileName;
 		} else if (indexType.equals(IndexType.CATEGORY)) {
 			fileNamePrefix += IndexWriter.categoryIndexFileNamePrefix;
-			dictionaryFileName = IndexWriter.categDictFileName;
 		} else if (indexType.equals(IndexType.AUTHOR)) {
 			fileNamePrefix += IndexWriter.authorIndexFileNamePrefix;
-			dictionaryFileName = IndexWriter.authorDictFileName;
 		} else if (indexType.equals(IndexType.PLACE)) {
 			fileNamePrefix += IndexWriter.placeIndexFileNamePrefix;
-			dictionaryFileName = IndexWriter.placesDictFileName;
 		}
 
 		index = new HashMap<Character, Map<Long, Map<Long, TermMetadataForThisDoc>>>();
@@ -232,7 +229,7 @@ public class IndexReader {
 						while (docIterator.hasNext()) {
 							docId = docIterator.next();
 							TermMetadataForThisDoc metadataForDocTerm = documentIdToObjectMap.get(docId);
-							postingsMap.put(documentDictionary.get(docId), metadataForDocTerm.getTermFrequency());
+							postingsMap.put(documentDictionary.get(docId).getDocumentName(), metadataForDocTerm.getTermFrequency());
 						}
 					}
 				}
@@ -345,7 +342,7 @@ public class IndexReader {
 			/* Create the return map based on the list docIDsMatched */
 			returnMap = new HashMap<String, Integer>();
 			for (Long docId : docIDsMatched) {
-				String termId = documentDictionary.get(docId);
+				String termId = documentDictionary.get(docId).getDocumentName();
 				Integer frequency = 0;
 
 				/* Calculate frequency */
@@ -380,12 +377,23 @@ public class IndexReader {
 	
 	public void getTermInformation() {
 		/* ID here */
-		index.get(0000);
+//		index.get(0000);
 	}
-	
 	
 	/* Testing methods */
 	public long getCorpusSize() {
 		return docDictionary.getTotalNumberOfDocs();
+	}
+	
+	public Map<String, DictionaryMetadata> getTermDictionary() {
+		return termDictionary;
+	}
+	
+	public Map<Long, DocumentDictionaryEntry> getDocumentDictionary() {
+		return documentDictionary;
+	}
+	
+	public Map<Character, Map<Long, Map<Long, TermMetadataForThisDoc>>> getIndex() {
+		return index;
 	}
 }
