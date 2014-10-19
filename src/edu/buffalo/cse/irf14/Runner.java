@@ -38,7 +38,7 @@ public class Runner {
 		// String indexDir = args[1];
 		// more? idk!
 
-		String ipDir = System.getProperty("user.dir") + File.separator + "training";
+		String ipDir = System.getProperty("user.dir") + File.separator + "training/harsh";
 		String indexDir = System.getProperty("INDEX.DIR");
 
 		File ipDirectory = new File(ipDir);

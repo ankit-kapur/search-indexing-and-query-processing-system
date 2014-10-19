@@ -377,4 +377,15 @@ public class IndexReader {
 		}
 		return returnMap;
 	}
+	
+	public void getTermInformation() {
+		/* ID here */
+		index.get(0000);
+	}
+	
+	
+	/* Testing methods */
+	public long getCorpusSize() {
+		return docDictionary.getTotalNumberOfDocs();
+	}
 }
