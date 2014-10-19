@@ -5,11 +5,11 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 
-import edu.buffalo.cse.irf14.query.ModelFactory;
 import edu.buffalo.cse.irf14.query.Query;
 import edu.buffalo.cse.irf14.query.QueryParser;
 import edu.buffalo.cse.irf14.query.QueryParserException;
-import edu.buffalo.cse.irf14.query.ScoreModel;
+import edu.buffalo.cse.irf14.scoring.ModelFactory;
+import edu.buffalo.cse.irf14.scoring.ScoreModel;
 
 /**
  * Main class to run the searcher. As before implement all TODO methods unless
@@ -65,7 +65,6 @@ public class SearchRunner {
 			// The above query object will contain Final Relevant scores of
 			// the query
 		} catch (QueryParserException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -74,8 +73,8 @@ public class SearchRunner {
 	/*
 	 * Method to execute queries in E mode
 	 * 
-	 * @param queryFile
-	 *             : The file from which queries are to be read and executed
+	 * @param queryFile : The file from which queries are to be read and
+	 * executed
 	 */
 	public void query(File queryFile) {
 		// TODO: IMPLEMENT THIS METHOD

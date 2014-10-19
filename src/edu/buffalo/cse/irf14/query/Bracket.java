@@ -2,9 +2,7 @@ package edu.buffalo.cse.irf14.query;
 
 import java.util.Map;
 
-import edu.buffalo.cse.irf14.analysis.util.TermMetadataForThisDoc;
-
-public class Bracket implements Expression {
+public class Bracket extends Expression {
 
 	
 	private String bracketValue;
@@ -24,7 +22,11 @@ public class Bracket implements Expression {
 
 	@Override
 	public Map<Long, DocMetaData> getPostings() {
-		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String toString() {
 		return null;
 	}
 }

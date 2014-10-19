@@ -1,12 +1,11 @@
 package edu.buffalo.cse.irf14.query;
 
-
 import java.util.Map;
 
-public interface Expression {
+public abstract class Expression {
 
+	/* Abstract methods */
 	@Override
-	public String toString();
-	public Map<Long,DocMetaData> getPostings();
-
+	public abstract String toString();
+	public abstract Map<Long, DocMetaData> getPostings();
 }

@@ -484,6 +484,7 @@ public class IndexWriter {
 				docuDictFile.delete();
 			docuDictFile.createNewFile();
 
+			/* Store N (total no. of docs) */
 			DocumentDictionary docDictionary = new DocumentDictionary(docIdCounter, documentDictionary);
 
 			docuDictionaryWriter = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(docuDictFile, true)));

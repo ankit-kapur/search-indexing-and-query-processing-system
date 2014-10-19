@@ -3,7 +3,9 @@ package edu.buffalo.cse.irf14.query;
 import java.util.HashMap;
 import java.util.Map;
 
-public class AND implements Expression {
+import edu.buffalo.cse.irf14.analysis.util.TermMetadataForThisDoc;
+
+public class AND extends Expression {
 
 	private Expression leftExpression;
 	private Expression rightExpression;
@@ -45,14 +47,23 @@ public class AND implements Expression {
 		/*- Recursively calling the left and right postings and intersecting them. */
 		Map<Long, DocMetaData> leftTermPostingMap = leftExpression.getPostings();
 		Map<Long, DocMetaData> rightTermPostingMap = leftExpression.getPostings();
-
 		Map<Long, DocMetaData> intersectionMap = new HashMap<Long, DocMetaData>();
-		intersectionMap.putAll(leftTermPostingMap);
-		for (Long DocId : rightTermPostingMap.keySet()) {
-			if (intersectionMap.containsKey(DocId)) {
-				rightTermPostingMap.get(DocId);
-			} else {
-				intersectionMap.put(DocId, rightTermPostingMap.get(DocId));
+
+		for (Long docId : leftTermPostingMap.keySet()) {
+
+			if (rightTermPostingMap.containsKey(docId)) {
+
+				DocMetaData docMetadataLeft = leftTermPostingMap.get(docId);
+				DocMetaData docMetadataRight = rightTermPostingMap.get(docId);
+
+				/* Intersected node */
+				Map<Long, TermMetadataForThisDoc> termMetaDataMap = new HashMap<Long, TermMetadataForThisDoc>();
+				termMetaDataMap.putAll(docMetadataLeft.getTermMetaDataMap());
+				termMetaDataMap.putAll(docMetadataRight.getTermMetaDataMap());
+
+				DocMetaData intersectDocMetadata = new DocMetaData();
+				intersectDocMetadata.setTermMetaDataMap(termMetaDataMap);
+				intersectionMap.put(docId, intersectDocMetadata);
 			}
 		}
 		return intersectionMap;

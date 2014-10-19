@@ -1,6 +1,5 @@
 package edu.buffalo.cse.irf14.query;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,13 +13,15 @@ import edu.buffalo.cse.irf14.document.FieldNames;
 import edu.buffalo.cse.irf14.index.IndexReader;
 import edu.buffalo.cse.irf14.index.IndexType;
 
-public class Term implements Expression {
+public class Term extends Expression {
 
-	static Map<Long, DocMetaData> finalDocMap = new HashMap<Long, DocMetaData>();
 	private String queryTerm;
 	boolean notFlag = false;
 	boolean barFlag = false;
 	StringBuffer sbBuffer = new StringBuffer();
+
+	IndexType zone;
+	String termText;
 
 	public Term(String string) {
 		queryTerm = string;
@@ -37,9 +38,7 @@ public class Term implements Expression {
 
 	@Override
 	public String toString() {
-		if (queryTerm.contains(":") || queryTerm.equals("AND")
-				|| queryTerm.equals("OR") || queryTerm.equals("NOT")
-				&& !notFlag) {
+		if (queryTerm.contains(":") || queryTerm.equals("AND") || queryTerm.equals("OR") || queryTerm.equals("NOT") && !notFlag) {
 			if (queryTerm.contains("(") || queryTerm.contains("[")) {
 				queryTerm = queryTerm.replace("(", "[");
 				barFlag = true;
@@ -55,8 +54,7 @@ public class Term implements Expression {
 			if (notFlag && barFlag) {
 				StringBuffer sbBuffer = new StringBuffer();
 				queryTerm = sbBuffer.append("<").append(queryTerm).toString();
-				queryTerm = sbBuffer.insert(queryTerm.indexOf("]"), ">")
-						.toString();
+				queryTerm = sbBuffer.insert(queryTerm.indexOf("]"), ">").toString();
 			}
 
 			return queryTerm;
@@ -74,15 +72,12 @@ public class Term implements Expression {
 			}
 			if (notFlag && barFlag) {
 				StringBuffer sbBuffer = new StringBuffer();
-				queryTerm = sbBuffer.append("<Term:").append(queryTerm)
-						.toString();
-				queryTerm = sbBuffer.insert(queryTerm.indexOf("]"), ">")
-						.toString();
+				queryTerm = sbBuffer.append("<Term:").append(queryTerm).toString();
+				queryTerm = sbBuffer.insert(queryTerm.indexOf("]"), ">").toString();
 			}
 			if (barFlag && !notFlag) {
 				sbBuffer.append(queryTerm);
-				queryTerm = sbBuffer.insert(sbBuffer.lastIndexOf("[") + 1,
-						"Term:").toString();
+				queryTerm = sbBuffer.insert(sbBuffer.lastIndexOf("[") + 1, "Term:").toString();
 
 			}
 			if (!notFlag && !barFlag) {
@@ -96,9 +91,9 @@ public class Term implements Expression {
 
 	@Override
 	public Map<Long, DocMetaData> getPostings() {
-		// TODO Auto-generated method stub
+		Map<Long, DocMetaData> docMap = new HashMap<Long, DocMetaData>();
 		String indexType = null;
-		IndexType IndexTypeObject = null;
+		IndexType indexTypeObject = null;
 		String filteredQueryTerm = null;
 		Long termId;
 		Character firstChar;
@@ -115,74 +110,75 @@ public class Term implements Expression {
 			if (queryTerm.contains(")")) {
 				queryTerm = queryTerm.replace(")", "");
 			}
-			indexType = queryTerm.substring(0, queryTerm.indexOf(":"));
+			indexType = queryTerm.substring(0, queryTerm.indexOf(":")).toLowerCase();
 
-			if (indexType.equals("Category")) {
-				IndexTypeObject = IndexType.CATEGORY;
-				analyzer = analyzerFactory.getAnalyzerForField(
-						FieldNames.CATEGORY, tokenStream);
+			if (indexType.equals("category")) {
+				indexTypeObject = IndexType.CATEGORY;
+				analyzer = analyzerFactory.getAnalyzerForField(FieldNames.CATEGORY, tokenStream);
 
-			} else if (indexType.equals("Author")) {
-				IndexTypeObject = IndexType.AUTHOR;
-				analyzer = analyzerFactory.getAnalyzerForField(
-						FieldNames.AUTHOR, tokenStream);
-			} else if (indexType.equals("Place")) {
-				IndexTypeObject = IndexType.PLACE;
-				analyzer = analyzerFactory.getAnalyzerForField(
-						FieldNames.PLACE, tokenStream);
+			} else if (indexType.equals("author")) {
+				indexTypeObject = IndexType.AUTHOR;
+				analyzer = analyzerFactory.getAnalyzerForField(FieldNames.AUTHOR, tokenStream);
+			} else if (indexType.equals("place")) {
+				indexTypeObject = IndexType.PLACE;
+				analyzer = analyzerFactory.getAnalyzerForField(FieldNames.PLACE, tokenStream);
 			} else {
-				IndexTypeObject = IndexType.TERM;
-				analyzer = analyzerFactory.getAnalyzerForField(
-						FieldNames.CONTENT, tokenStream);
+				indexTypeObject = IndexType.TERM;
+				analyzer = analyzerFactory.getAnalyzerForField(FieldNames.CONTENT, tokenStream);
 			}
+
 			analyzer.processThroughFilters();
 			tokenStream = analyzer.getStream();
 			token = tokenStream.getCurrent();
 			filteredQueryTerm = token.getTermText();
 		} else {
-			IndexTypeObject = IndexType.TERM;
+			indexTypeObject = IndexType.TERM;
 			if (queryTerm.contains("(")) {
 				queryTerm = queryTerm.replace("(", "");
 			}
 			if (queryTerm.contains(")")) {
 				queryTerm = queryTerm.replace(")", "");
 			}
-			analyzer = analyzerFactory.getAnalyzerForField(FieldNames.CONTENT,
-					tokenStream);
+			analyzer = analyzerFactory.getAnalyzerForField(FieldNames.CONTENT, tokenStream);
 			analyzer.processThroughFilters();
 			tokenStream = analyzer.getStream();
 			token = tokenStream.getCurrent();
 			filteredQueryTerm = token.getTermText();
 		}
-		IndexReader indexReader = new IndexReader(
-				System.getProperty("user.dir") + File.separator + "indexdir",
-				IndexTypeObject);
+
+		String zoneName = filteredQueryTerm.substring(0, filteredQueryTerm.indexOf(":"));
+		termText = filteredQueryTerm.substring(filteredQueryTerm.indexOf(":") + 1, filteredQueryTerm.length());
+		zone = QueryUtils.getZoneTypeByZoneName(zoneName);
+
+		IndexReader indexReader = IndexesAndDictionaries.getIndexByType(indexTypeObject);
 		Map<String, DictionaryMetadata> termDictionary = indexReader.termDictionary;
-		Map<Long, String> documentDictionary = indexReader.documentDictionary;
-		DictionaryMetadata dictionaryMetadata = termDictionary
-				.get(filteredQueryTerm);
-		firstChar = filteredQueryTerm.toLowerCase().charAt(0);
+		DictionaryMetadata dictionaryMetadata = termDictionary.get(termText);
+		firstChar = termText.toLowerCase().charAt(0);
 		termId = dictionaryMetadata.getTermId();
 		Map<Character, Map<Long, Map<Long, TermMetadataForThisDoc>>> index = indexReader.index;
-		Map<Long, TermMetadataForThisDoc> postingsMap = index.get(firstChar)
-				.get(termId);
+		Map<Long, TermMetadataForThisDoc> postingsMap = index.get(firstChar).get(termId);
 
 		for (Long docId : postingsMap.keySet()) {
 			DocMetaData docMetaData = null;
-			if (finalDocMap.containsKey(docId)) {
-				docMetaData = finalDocMap.get(docId);
+			if (docMap.containsKey(docId)) {
+				docMetaData = docMap.get(docId);
 			} else {
 				docMetaData = new DocMetaData();
 			}
 
-			Map<Long, TermMetadataForThisDoc> termMetaDataMap = docMetaData
-					.getTermMetaDataMap();
-			termMetaDataMap.put(termId, postingsMap.get(docId));
+			/* Set the zone in the term-metadata map */
+			Map<Long, TermMetadataForThisDoc> termMetaDataMap = docMetaData.getTermMetaDataMap();
+			TermMetadataForThisDoc termMetadata = postingsMap.get(docId);
+			termMetadata.setZone(zone);
+			termMetaDataMap.put(termId, termMetadata);
 			docMetaData.setTermMetaDataMap(termMetaDataMap);
-			
-			finalDocMap.put(docId, docMetaData);
-		}
-		return finalDocMap;
-	}
 
+			/* Add query-term to the list that holds every term in the query */
+			if (!Query.getQueryTermList().keySet().contains(termId))
+				Query.addQueryTermToList(termId, zone);
+
+			docMap.put(docId, docMetaData);
+		}
+		return docMap;
+	}
 }

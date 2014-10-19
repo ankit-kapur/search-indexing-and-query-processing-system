@@ -4,12 +4,15 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.buffalo.cse.irf14.index.IndexType;
+
 public class TermMetadataForThisDoc implements Serializable {
 	private static final long serialVersionUID = 1L;
 	int termFrequency;
 	int boosterScore;
 	char firstLetter;
 	List<Integer> positions;
+	IndexType zone;
 
 	public TermMetadataForThisDoc(int termFrequency, int boosterScore, char firstLetter, int position) {
 		super();
@@ -18,6 +21,14 @@ public class TermMetadataForThisDoc implements Serializable {
 		this.firstLetter = firstLetter;
 
 		addPositionToList(position);
+	}
+
+	public IndexType getZone() {
+		return zone;
+	}
+
+	public void setZone(IndexType zone) {
+		this.zone = zone;
 	}
 
 	public void addPositionToList(int position) {

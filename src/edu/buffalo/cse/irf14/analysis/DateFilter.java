@@ -63,7 +63,6 @@ public class DateFilter extends TokenFilter {
 	@SuppressWarnings("deprecation")
 	public TokenStream processFilterForToken() throws FilterException {
 
-		long startTime = new Date().getTime();
 		TokenStream modifiedTokenStream = null;
 		tokenStreamString = tokenStreamString.trim();
 		String dateFound = null;

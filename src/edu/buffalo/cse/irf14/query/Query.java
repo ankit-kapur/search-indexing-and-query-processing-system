@@ -1,6 +1,9 @@
 package edu.buffalo.cse.irf14.query;
 
 import java.util.HashMap;
+import java.util.Map;
+
+import edu.buffalo.cse.irf14.index.IndexType;
 
 /**
  * Class that represents a parsed query
@@ -8,14 +11,27 @@ import java.util.HashMap;
  *
  */
 public class Query {
-	/**
-	 * Method to convert given parsed query into string
-	 */
+	/*- Method to convert given parsed query into string */
 	private String parsedQuery;
-	private HashMap<Integer,QueryResults> resultsMap;
+	private Map<Long, DocMetaData> documentMap;
+	private HashMap<Integer, QueryResults> resultsMap;
+	private static Map<Long, IndexType> queryTermList;
 
+	Query() {
+		queryTermList = new HashMap<Long, IndexType>();
+	}
+	public static Map<Long, IndexType> getQueryTermList() {
+		return queryTermList;
+	}
+	public static void setQueryTermList(HashMap<Long, IndexType> list) {
+		queryTermList = list;
+	}
+	public static void addQueryTermToList(long queryId, IndexType zone) {
+		queryTermList.put(queryId, zone);
+	}
+	
+	
 	public String toString() {
-		//TODO: YOU MUST IMPLEMENT THIS
 		return parsedQuery;
 	}
 	public String getParsedQuery() {
@@ -30,5 +46,10 @@ public class Query {
 	public void setResultsMap(HashMap<Integer, QueryResults> resultsMap) {
 		this.resultsMap = resultsMap;
 	}
-
+	public Map<Long, DocMetaData> getDocumentMap() {
+		return documentMap;
+	}
+	public void setDocumentMap(Map<Long, DocMetaData> documentMap) {
+		this.documentMap = documentMap;
+	}
 }
