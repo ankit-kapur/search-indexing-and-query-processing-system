@@ -71,7 +71,7 @@ public class SearchRunner {
 
 	}
 
-	/**
+	/*
 	 * Method to execute queries in E mode
 	 * 
 	 * @param queryFile

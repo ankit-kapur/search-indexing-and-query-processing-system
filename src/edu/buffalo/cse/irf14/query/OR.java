@@ -1,5 +1,10 @@
 package edu.buffalo.cse.irf14.query;
 
+import java.util.HashMap;
+import java.util.Map;
+
+
+
 public class OR implements Expression {
 	
 	public OR()
@@ -32,4 +37,14 @@ public class OR implements Expression {
 		return leftExpression.toString()+" "+"OR"+" "+rightExpression.toString();
 		
 	}
+	@Override
+	public Map<Long, DocMetaData> getPostings() {
+		Map<Long, DocMetaData> leftTermPostingMap=leftExpression.getPostings();
+		Map<Long, DocMetaData> rightTermPostingMap=leftExpression.getPostings();
+		Map<Long, DocMetaData> UnionMap = new HashMap<Long, DocMetaData>();
+		UnionMap.putAll(leftTermPostingMap);
+		UnionMap.putAll(rightTermPostingMap);
+		return UnionMap;
+	}
+	
 }

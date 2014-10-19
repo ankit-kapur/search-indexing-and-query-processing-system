@@ -3,6 +3,7 @@
  */
 package edu.buffalo.cse.irf14.query;
 
+import edu.buffalo.cse.irf14.analysis.util.TermMetadataForThisDoc;
 import edu.buffalo.cse.irf14.query.AND;
 import edu.buffalo.cse.irf14.query.Bracket;
 import edu.buffalo.cse.irf14.query.Expression;
@@ -12,6 +13,8 @@ import edu.buffalo.cse.irf14.query.PreProcessingQuery;
 import edu.buffalo.cse.irf14.query.QueryPreProcessingException;
 import edu.buffalo.cse.irf14.query.Term;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Stack;
 
 /**
@@ -156,6 +159,7 @@ public class QueryParser {
 			}
 			Expression expression=operandStack.pop();
 			String FinalParsedQuery=expression.toString();
+			Map<Long,DocMetaData> finalPostingsMap=expression.getPostings();
 			System.out.println("The Final Processed query is-->"+"{"+FinalParsedQuery+"}");
 			query.setParsedQuery(FinalParsedQuery);
 
