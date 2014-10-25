@@ -59,6 +59,10 @@ public class IndexWriter {
 
 	/* Miscellaneous declarations */
 	long docIdCounter, termDictIdCounter;
+	public static long lengthofCorpus;
+
+	/* List to keep track of docs covered */
+	public static List<String> docsCovered = new ArrayList<String>();
 
 	/**
 	 * Default constructor
@@ -101,23 +105,22 @@ public class IndexWriter {
 			Tokenizer tokenizer = new Tokenizer();
 			String fieldText = null;
 
-			// String category = (doc.getField(FieldNames.CATEGORY) != null
-			// && doc.getField(FieldNames.CATEGORY).length > 0) ?
-			// doc.getField(FieldNames.CATEGORY)[0] : "";
-			String documentId = doc.getField(FieldNames.FILEID)[0];
+			String documentName = doc.getField(FieldNames.FILEID)[0];
 			/* Remove file extension, if present */
-			if (documentId.indexOf(".") > 0) {
-				documentId = documentId.substring(0, documentId.indexOf("."));
+			if (documentName.indexOf(".") > 0) {
+				documentName = documentName.substring(0, documentName.indexOf("."));
 			}
 
 			long documentDictId = docIdCounter;
 
-			if (documentDictionary.containsValue(documentId)) {
+			DocumentDictionaryEntry documentDictionaryEntry = new DocumentDictionaryEntry();
+
+			if (docsCovered.contains(documentName)) {
 				duplicateDoc = true;
 
 				/* Find the original doc's ID */
 				for (long key : documentDictionary.keySet()) {
-					if (documentDictionary.get(key).equals(documentId)) {
+					if (documentDictionary.get(key).getDocumentName().equals(documentName)) {
 						documentDictId = key;
 						break;
 					}
@@ -137,14 +140,17 @@ public class IndexWriter {
 					fieldName = fieldNameForTermIndex;
 					if (doc.getField(fieldName) != null) {
 
+						/*- Find the OFFSET for this field, to be used for storing term positions */
+
 						List<String> termTrackerForThisDoc = new ArrayList<String>();
 						fieldText = doc.getField(fieldNameForTermIndex)[0];
-						
-						/* If entire title is in caps, convert to lower case */
+
+						/*- If entire title is in caps, convert to lower case */
 						if (fieldNameForTermIndex.equals(FieldNames.TITLE) && fieldText.toUpperCase().equals(fieldText)) {
+							documentDictionaryEntry.setTitle(fieldText);
 							fieldText = fieldText.toLowerCase();
 						}
-						
+
 						TokenStream tokenstream = tokenizer.consume(fieldText);
 
 						Analyzer analyzer = analyzerFactory.getAnalyzerForField(fieldNameForTermIndex, tokenstream);
@@ -230,187 +236,196 @@ public class IndexWriter {
 				}
 
 				/* Building the AUTHOR index */
-				fieldName = FieldNames.AUTHOR;
-				if (doc.getField(fieldName) != null) {
+				fieldNameList = new ArrayList<FieldNames>();
+				fieldNameList.add(FieldNames.AUTHOR);
+				fieldNameList.add(FieldNames.AUTHORORG);
+				tokenCounter = 0;
 
-					List<String> termTrackerForThisDoc = new ArrayList<String>();
-					fieldText = doc.getField(fieldName)[0];
-					TokenStream tokenstream = tokenizer.consume(fieldText);
+				for (FieldNames fieldNameForTermIndex : fieldNameList) {
+					fieldName = fieldNameForTermIndex;
 
-					Analyzer analyzer = analyzerFactory.getAnalyzerForField(fieldName, tokenstream);
-					analyzer.processThroughFilters();
-					tokenstream = analyzer.getStream();
+					if (doc.getField(fieldName) != null) {
 
-					/* Transfer tokenstream into the dictionary */
-					tokenstream.reset();
-					tokenCounter = 0;
-					while (tokenstream.hasNext()) {
-						Token token = tokenstream.next();
-						Long termId = termDictIdCounter;
+						
+						List<String> termTrackerForThisDoc = new ArrayList<String>();
+						fieldText = doc.getField(fieldName)[0];
+						TokenStream tokenstream = tokenizer.consume(fieldText);
 
-						/* Add to doc's term-storage */
-						if (termStorage.containsKey(termId)) {
-							termStorage.put(termId, termStorage.get(termId) + 1);
-						} else {
-							termStorage.put(termId, 1);
-						}
+						Analyzer analyzer = analyzerFactory.getAnalyzerForField(fieldName, tokenstream);
+						analyzer.processThroughFilters();
+						tokenstream = analyzer.getStream();
 
-						/*- Increment the df counter only if this term 
-						 * is occuring in the doc for the first time */
-						if (termTrackerForThisDoc.contains(token.getTermText())) {
-							termTrackerForThisDoc.add(token.getTermText());
-						} else {
+						/* Transfer tokenstream into the dictionary */
+						tokenstream.reset();
+						while (tokenstream.hasNext()) {
+							Token token = tokenstream.next();
+							Long termId = termDictIdCounter;
 
-							/*- Check if the dictionary already contains
-							 * the term. If yes, get the ID. If not, add
-							 * the term to the dictionary */
-							if (dictionary.containsKey(token.getTermText())) {
-								termId = dictionary.get(token.getTermText()).getTermId();
-								/*- Increase overall term frequency in
-								 * term-dictionary */
-								dictionary.get(token.getTermText()).setFrequency(dictionary.get(token.getTermText()).getFrequency() + 1);
-
+							/* Add to doc's term-storage */
+							if (termStorage.containsKey(termId)) {
+								termStorage.put(termId, termStorage.get(termId) + 1);
 							} else {
-								DictionaryMetadata dictionaryMetadata = new DictionaryMetadata(termDictIdCounter++, 1);
-								dictionary.put(token.getTermText(), dictionaryMetadata);
+								termStorage.put(termId, 1);
 							}
-						}
 
-						/*- Set booster-score and frequency (relevant to
-						 * this doc) */
-						int boosterScore = BOOSTER_MULTIPLIER * AUTHOR_BOOSTER;
-
-						/* Put in the corresponding alphabet-index */
-						Map<Long, Map<Long, TermMetadataForThisDoc>> termIndexForThisAlphabet;
-						char firstChar = token.getTermText().toLowerCase().charAt(0);
-						if (authorIndex.containsKey(firstChar)) {
-							termIndexForThisAlphabet = authorIndex.get(firstChar);
-						} else {
-							termIndexForThisAlphabet = new HashMap<Long, Map<Long, TermMetadataForThisDoc>>();
-
-							if (firstChar >= 'a' && firstChar <= 'z') {
-								authorIndex.put(firstChar, termIndexForThisAlphabet);
+							/*- Increment the df counter only if this term 
+							 * is occuring in the doc for the first time */
+							if (termTrackerForThisDoc.contains(token.getTermText())) {
+								termTrackerForThisDoc.add(token.getTermText());
 							} else {
-								authorIndex.put('_', termIndexForThisAlphabet);
+
+								/*- Check if the dictionary already contains
+								 * the term. If yes, get the ID. If not, add
+								 * the term to the dictionary */
+								if (dictionary.containsKey(token.getTermText())) {
+									termId = dictionary.get(token.getTermText()).getTermId();
+									/*- Increase overall term frequency in
+									 * term-dictionary */
+									dictionary.get(token.getTermText()).setFrequency(dictionary.get(token.getTermText()).getFrequency() + 1);
+
+								} else {
+									DictionaryMetadata dictionaryMetadata = new DictionaryMetadata(termDictIdCounter++, 1);
+									dictionary.put(token.getTermText(), dictionaryMetadata);
+								}
 							}
-						}
 
-						/* Put in the term index */
-						Map<Long, TermMetadataForThisDoc> termIndexForThisDoc;
-						if (termIndexForThisAlphabet.containsKey(termId)) {
-							termIndexForThisDoc = termIndexForThisAlphabet.get(termId);
-						} else {
-							termIndexForThisDoc = new HashMap<Long, TermMetadataForThisDoc>();
-							termIndexForThisAlphabet.put(termId, termIndexForThisDoc);
-						}
+							/*- Set booster-score and frequency (relevant to
+							 * this doc) */
+							int boosterScore = BOOSTER_MULTIPLIER * AUTHOR_BOOSTER;
 
-						/* For the doc */
-						TermMetadataForThisDoc termMetadataForThisDoc = null;
-						if (termIndexForThisDoc.containsKey(documentDictId)) {
-							termMetadataForThisDoc = termIndexForThisDoc.get(documentDictId);
-							termMetadataForThisDoc.setTermFrequency(termMetadataForThisDoc.getTermFrequency() + 1);
-							termMetadataForThisDoc.setBoosterScore(termMetadataForThisDoc.getBoosterScore() + boosterScore);
-							termMetadataForThisDoc.addPositionToList(tokenCounter);
-						} else {
-							termMetadataForThisDoc = new TermMetadataForThisDoc(1, boosterScore, token.getTermText().charAt(0), tokenCounter);
-							termIndexForThisDoc.put(documentDictId, termMetadataForThisDoc);
+							/* Put in the corresponding alphabet-index */
+							Map<Long, Map<Long, TermMetadataForThisDoc>> termIndexForThisAlphabet;
+							char firstChar = token.getTermText().toLowerCase().charAt(0);
+							if (authorIndex.containsKey(firstChar)) {
+								termIndexForThisAlphabet = authorIndex.get(firstChar);
+							} else {
+								termIndexForThisAlphabet = new HashMap<Long, Map<Long, TermMetadataForThisDoc>>();
+
+								if (firstChar >= 'a' && firstChar <= 'z') {
+									authorIndex.put(firstChar, termIndexForThisAlphabet);
+								} else {
+									authorIndex.put('_', termIndexForThisAlphabet);
+								}
+							}
+
+							/* Put in the term index */
+							Map<Long, TermMetadataForThisDoc> termIndexForThisDoc;
+							if (termIndexForThisAlphabet.containsKey(termId)) {
+								termIndexForThisDoc = termIndexForThisAlphabet.get(termId);
+							} else {
+								termIndexForThisDoc = new HashMap<Long, TermMetadataForThisDoc>();
+								termIndexForThisAlphabet.put(termId, termIndexForThisDoc);
+							}
+
+							/* For the doc */
+							TermMetadataForThisDoc termMetadataForThisDoc = null;
+							if (termIndexForThisDoc.containsKey(documentDictId)) {
+								termMetadataForThisDoc = termIndexForThisDoc.get(documentDictId);
+								termMetadataForThisDoc.setTermFrequency(termMetadataForThisDoc.getTermFrequency() + 1);
+								termMetadataForThisDoc.setBoosterScore(termMetadataForThisDoc.getBoosterScore() + boosterScore);
+								termMetadataForThisDoc.addPositionToList(tokenCounter);
+							} else {
+								termMetadataForThisDoc = new TermMetadataForThisDoc(1, boosterScore, token.getTermText().charAt(0), tokenCounter);
+								termIndexForThisDoc.put(documentDictId, termMetadataForThisDoc);
+							}
+							tokenCounter++;
 						}
-						tokenCounter++;
 					}
-				}
 
-				/* Building the PLACES index */
-				fieldName = FieldNames.PLACE;
-				if (doc.getField(fieldName) != null) {
-					List<String> termTrackerForThisDoc = new ArrayList<String>();
-					fieldText = doc.getField(fieldName)[0];
-					TokenStream tokenstream = tokenizer.consume(fieldText);
+					/* Building the PLACES index */
+					fieldName = FieldNames.PLACE;
+					if (doc.getField(fieldName) != null) {
 
-					Analyzer analyzer = analyzerFactory.getAnalyzerForField(fieldName, tokenstream);
-					analyzer.processThroughFilters();
-					tokenstream = analyzer.getStream();
+						List<String> termTrackerForThisDoc = new ArrayList<String>();
+						fieldText = doc.getField(fieldName)[0];
+						TokenStream tokenstream = tokenizer.consume(fieldText);
 
-					/* Transfer tokenstream into the dictionary */
-					tokenstream.reset();
-					tokenCounter = 0;
-					while (tokenstream.hasNext()) {
-						Token token = tokenstream.next();
-						Long termId = termDictIdCounter;
+						Analyzer analyzer = analyzerFactory.getAnalyzerForField(fieldName, tokenstream);
+						analyzer.processThroughFilters();
+						tokenstream = analyzer.getStream();
 
-						/* Add to doc's term-storage */
-						if (termStorage.containsKey(termId)) {
-							termStorage.put(termId, termStorage.get(termId) + 1);
-						} else {
-							termStorage.put(termId, 1);
-						}
+						/* Transfer tokenstream into the dictionary */
+						tokenstream.reset();
+						tokenCounter = 0;
+						while (tokenstream.hasNext()) {
+							Token token = tokenstream.next();
+							Long termId = termDictIdCounter;
 
-						/*- Increment the df counter only if this term 
-						 * is occuring in the doc for the first time */
-						if (termTrackerForThisDoc.contains(token.getTermText())) {
-							termTrackerForThisDoc.add(token.getTermText());
-						} else {
-
-							/*- Check if the dictionary already contains the
-							 * term. If yes, get the ID. If not, add the term
-							 * to the dictionary */
-							if (dictionary.containsKey(token.getTermText())) {
-								termId = dictionary.get(token.getTermText()).getTermId();
-								/*- Increase overall term frequency in
-								 * term-dictionary */
-								dictionary.get(token.getTermText()).setFrequency(dictionary.get(token.getTermText()).getFrequency() + 1);
-
+							/* Add to doc's term-storage */
+							if (termStorage.containsKey(termId)) {
+								termStorage.put(termId, termStorage.get(termId) + 1);
 							} else {
-								DictionaryMetadata dictionaryMetadata = new DictionaryMetadata(termDictIdCounter++, 1);
-								dictionary.put(token.getTermText(), dictionaryMetadata);
+								termStorage.put(termId, 1);
 							}
-						}
 
-						/*- Set booster-score and frequency (relevant to
-						 * this doc) */
-						int boosterScore = BOOSTER_MULTIPLIER * PLACES_BOOSTER;
-
-						/* Put in the corresponding alphabet-index */
-						Map<Long, Map<Long, TermMetadataForThisDoc>> termIndexForThisAlphabet;
-						char firstChar = token.getTermText().toLowerCase().charAt(0);
-						if (placesIndex.containsKey(firstChar)) {
-							termIndexForThisAlphabet = placesIndex.get(firstChar);
-						} else {
-							termIndexForThisAlphabet = new HashMap<Long, Map<Long, TermMetadataForThisDoc>>();
-
-							if (firstChar >= 'a' && firstChar <= 'z') {
-								placesIndex.put(firstChar, termIndexForThisAlphabet);
+							/*- Increment the df counter only if this term 
+							 * is occuring in the doc for the first time */
+							if (termTrackerForThisDoc.contains(token.getTermText())) {
+								termTrackerForThisDoc.add(token.getTermText());
 							} else {
-								placesIndex.put('_', termIndexForThisAlphabet);
+
+								/*- Check if the dictionary already contains the
+								 * term. If yes, get the ID. If not, add the term
+								 * to the dictionary */
+								if (dictionary.containsKey(token.getTermText())) {
+									termId = dictionary.get(token.getTermText()).getTermId();
+									/*- Increase overall term frequency in
+									 * term-dictionary */
+									dictionary.get(token.getTermText()).setFrequency(dictionary.get(token.getTermText()).getFrequency() + 1);
+
+								} else {
+									DictionaryMetadata dictionaryMetadata = new DictionaryMetadata(termDictIdCounter++, 1);
+									dictionary.put(token.getTermText(), dictionaryMetadata);
+								}
 							}
-						}
 
-						/* Put in the term index */
-						Map<Long, TermMetadataForThisDoc> termIndexForThisDoc;
-						if (termIndexForThisAlphabet.containsKey(termId)) {
-							termIndexForThisDoc = termIndexForThisAlphabet.get(termId);
-						} else {
-							termIndexForThisDoc = new HashMap<Long, TermMetadataForThisDoc>();
-							termIndexForThisAlphabet.put(termId, termIndexForThisDoc);
-						}
+							/*- Set booster-score and frequency (relevant to
+							 * this doc) */
+							int boosterScore = BOOSTER_MULTIPLIER * PLACES_BOOSTER;
 
-						/* For the doc */
-						TermMetadataForThisDoc termMetadataForThisDoc = null;
-						if (termIndexForThisDoc.containsKey(documentDictId)) {
-							termMetadataForThisDoc = termIndexForThisDoc.get(documentDictId);
-							termMetadataForThisDoc.setTermFrequency(termMetadataForThisDoc.getTermFrequency() + 1);
-							termMetadataForThisDoc.setBoosterScore(termMetadataForThisDoc.getBoosterScore() + boosterScore);
-							termMetadataForThisDoc.addPositionToList(tokenCounter);
-						} else {
-							termMetadataForThisDoc = new TermMetadataForThisDoc(1, boosterScore, token.getTermText().charAt(0), tokenCounter);
-							termIndexForThisDoc.put(documentDictId, termMetadataForThisDoc);
+							/* Put in the corresponding alphabet-index */
+							Map<Long, Map<Long, TermMetadataForThisDoc>> termIndexForThisAlphabet;
+							char firstChar = token.getTermText().toLowerCase().charAt(0);
+							if (placesIndex.containsKey(firstChar)) {
+								termIndexForThisAlphabet = placesIndex.get(firstChar);
+							} else {
+								termIndexForThisAlphabet = new HashMap<Long, Map<Long, TermMetadataForThisDoc>>();
+
+								if (firstChar >= 'a' && firstChar <= 'z') {
+									placesIndex.put(firstChar, termIndexForThisAlphabet);
+								} else {
+									placesIndex.put('_', termIndexForThisAlphabet);
+								}
+							}
+
+							/* Put in the term index */
+							Map<Long, TermMetadataForThisDoc> termIndexForThisDoc;
+							if (termIndexForThisAlphabet.containsKey(termId)) {
+								termIndexForThisDoc = termIndexForThisAlphabet.get(termId);
+							} else {
+								termIndexForThisDoc = new HashMap<Long, TermMetadataForThisDoc>();
+								termIndexForThisAlphabet.put(termId, termIndexForThisDoc);
+							}
+
+							/* For the doc */
+							TermMetadataForThisDoc termMetadataForThisDoc = null;
+							if (termIndexForThisDoc.containsKey(documentDictId)) {
+								termMetadataForThisDoc = termIndexForThisDoc.get(documentDictId);
+								termMetadataForThisDoc.setTermFrequency(termMetadataForThisDoc.getTermFrequency() + 1);
+								termMetadataForThisDoc.setBoosterScore(termMetadataForThisDoc.getBoosterScore() + boosterScore);
+								termMetadataForThisDoc.addPositionToList(tokenCounter);
+							} else {
+								termMetadataForThisDoc = new TermMetadataForThisDoc(1, boosterScore, token.getTermText().charAt(0), tokenCounter);
+								termIndexForThisDoc.put(documentDictId, termMetadataForThisDoc);
+							}
+							tokenCounter++;
 						}
-						tokenCounter++;
 					}
+
+					/* Increment the counter for document IDs */
+					docIdCounter++;
+
 				}
-
-				/* Increment the counter for document IDs */
-				docIdCounter++;
-
 			}
 
 			/*- If this is a duplicate document, we only want to update the category dictionary and index */
@@ -418,6 +433,7 @@ public class IndexWriter {
 			/* MODIFY the CATEGORY index */
 			fieldName = FieldNames.CATEGORY;
 			if (doc.getField(fieldName) != null) {
+
 				List<String> termTrackerForThisDoc = new ArrayList<String>();
 				fieldText = doc.getField(fieldName)[0];
 				TokenStream tokenstream = tokenizer.consume(fieldText);
@@ -505,19 +521,23 @@ public class IndexWriter {
 			if (!duplicateDoc) {
 				/* Calculate the Euclidean score */
 				double euclideanWeight = 0.0;
+				int numOfTokensInDocument = 0;
 				for (long termId : termStorage.keySet()) {
 					int freq = termStorage.get(termId);
 					double tf = calculateTfWeight(freq);
 					euclideanWeight += tf * tf;
+					numOfTokensInDocument += freq;
 				}
+				lengthofCorpus += numOfTokensInDocument;
 				euclideanWeight = Math.sqrt(euclideanWeight);
-				DocumentDictionaryEntry documentDictionaryEntry = new DocumentDictionaryEntry();
 				documentDictionaryEntry.setEuclideanWeight(euclideanWeight);
-				documentDictionaryEntry.setDocumentName(documentId);
-
+				documentDictionaryEntry.setDocumentName(documentName);
+				documentDictionaryEntry.setNumOfTokensInDocument(numOfTokensInDocument);
 				documentDictionary.put(documentDictId, documentDictionaryEntry);
-			}
 
+				/* Add doc to list of covered docs */
+				docsCovered.add(documentName);
+			}
 		} catch (TokenizerException e) {
 			System.out.println("Exception caught");
 			e.printStackTrace();
@@ -541,6 +561,7 @@ public class IndexWriter {
 
 			/* Store N (total no. of docs) */
 			DocumentDictionary docDictionary = new DocumentDictionary(docIdCounter, documentDictionary);
+			docDictionary.setAvgLenOfDocInCorpus(lengthofCorpus / docIdCounter);
 
 			docuDictionaryWriter = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(docuDictFile, true)));
 			docuDictionaryWriter.writeObject(docDictionary);

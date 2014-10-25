@@ -1,16 +1,22 @@
 package edu.buffalo.cse.irf14;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.PrintStream;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
+import edu.buffalo.cse.irf14.index.IndexType;
 import edu.buffalo.cse.irf14.query.IndexesAndDictionaries;
 import edu.buffalo.cse.irf14.query.Query;
 import edu.buffalo.cse.irf14.query.QueryParser;
 import edu.buffalo.cse.irf14.query.QueryParserException;
 import edu.buffalo.cse.irf14.scoring.ModelFactory;
 import edu.buffalo.cse.irf14.scoring.ScoreModel;
+import edu.buffalo.cse.irf14.scoring.ScorerException;
 
 /**
  * Main class to run the searcher. As before implement all TODO methods unless
@@ -25,6 +31,8 @@ public class SearchRunner {
 	};
 
 	char mode;
+	private PrintStream stream;
+
 	/**
 	 * Default (and only public) constuctor
 	 * 
@@ -39,7 +47,9 @@ public class SearchRunner {
 	 */
 	public SearchRunner(String indexDir, String corpusDir, char mode, PrintStream stream) {
 		IndexesAndDictionaries.readIndexes(indexDir);
+		IndexesAndDictionaries.setCorpusDirec(corpusDir);
 		this.mode = mode;
+		this.stream = stream;
 	}
 
 	/**
@@ -50,11 +60,14 @@ public class SearchRunner {
 	 * @param model
 	 *             : Scoring Model to use for ranking results
 	 */
+
 	public void query(String userQuery, ScoringModel model) {
-		// TODO: IMPLEMENT THIS METHOD
 		try {
 			ScoreModel scoreModel = null;
 			ModelFactory modelFactory = ModelFactory.getInstance();
+			
+			/* Start time */
+			long startTime = new Date().getTime();
 			Query query = QueryParser.parse(userQuery, "OR");
 			// The above query object will contain ParsedQuery and
 			// PostingsList of the query
@@ -64,10 +77,25 @@ public class SearchRunner {
 			if (model.equals(ScoringModel.OKAPI)) {
 				scoreModel = modelFactory.getModelForQuery(ScoringModel.OKAPI);
 			}
+			
+			/*- This query object will contain final relevant scores of the query */
 			query = scoreModel.calculateScore(query);
-			// The above query object will contain Final Relevant scores of
-			// the query
+			double queryTime = (new Date().getTime() - startTime) / 1000.0;
+
+			query.setQueryTime(String.valueOf(queryTime));
+			
+
+			/* Print ranked map */
+			for (long docId : query.getResultsMap().keySet()) {
+				System.out.println(IndexesAndDictionaries.getIndexByType(IndexType.TERM).getDocumentDictionary().get(docId).getDocumentName() + " -> score: " + query.getResultsMap().get(docId).getRelevancyScore() + " -> rank: " + query.getResultsMap().get(docId).getRank() + "\nTitle: " + query.getResultsMap().get(docId).getTitle() + "\nSnippet: " + query.getResultsMap().get(docId).getSnippet() + "\n");
+			}
+			System.out.println("Query execution time ==> " + queryTime + " seconds");
+			
+			
+			
 		} catch (QueryParserException e) {
+			e.printStackTrace();
+		} catch (ScorerException e) {
 			e.printStackTrace();
 		}
 
@@ -80,7 +108,74 @@ public class SearchRunner {
 	 * executed
 	 */
 	public void query(File queryFile) {
-		// TODO: IMPLEMENT THIS METHOD
+		String fileBody = null;
+		int numResults = 0;
+		Map<String, String> queryMap = new HashMap<String, String>();
+		try {
+			StringBuffer sbBuffer = new StringBuffer();
+			fileBody = new Scanner(queryFile).useDelimiter("\\A").next();
+			String[] lines = fileBody.split("[\\r]");
+			int nOfQ = Integer.parseInt(lines[0].substring(lines[0].indexOf('=') + 1));
+			System.out.println(nOfQ);
+			for (int i = 1; i <= nOfQ; i++) {
+				String queryId = lines[i].substring(0, lines[i].indexOf(':'));
+				String query = lines[i].substring(lines[i].indexOf('{') + 1, lines[i].indexOf('}'));
+				System.out.println(queryId + " " + "Query-->" + query);
+				queryMap.put(queryId, query);
+			}
+
+			for (String queryId : queryMap.keySet()) {
+				int size = 0;
+				try {
+					numResults++;
+
+					/* Start time */
+					long startTime = new Date().getTime();
+					
+					Query query = QueryParser.parse(queryMap.get(queryId), "OR");
+					ScoreModel scoreModel = null;
+					ModelFactory modelFactory = ModelFactory.getInstance();
+					scoreModel = modelFactory.getModelForQuery(ScoringModel.OKAPI);
+					query = scoreModel.calculateScore(query);
+
+					/* Set time taken by query */
+					double queryTime = (new Date().getTime() - startTime) / 1000.0;
+					query.setQueryTime(String.valueOf(queryTime));
+					
+					sbBuffer.append(queryId).append(":").append("{");
+					for (long docId : query.getResultsMap().keySet()) {
+						size++;
+						if (size == query.getResultsMap().size())
+							sbBuffer.append(IndexesAndDictionaries.getIndexByType(IndexType.TERM).getDocumentDictionary().get(docId).getDocumentName()).append("#").append(query.getResultsMap().get(docId).getRelevancyScore());
+						else
+							sbBuffer.append(IndexesAndDictionaries.getIndexByType(IndexType.TERM).getDocumentDictionary().get(docId).getDocumentName()).append("#").append(query.getResultsMap().get(docId).getRelevancyScore()).append(",").append(" ");
+					}
+					sbBuffer.append("}\n\r");
+
+
+					/* Print ranked map */
+					for (long docId : query.getResultsMap().keySet()) {
+						System.out.println(IndexesAndDictionaries.getIndexByType(IndexType.TERM).getDocumentDictionary().get(docId).getDocumentName() + " -> score: " + query.getResultsMap().get(docId).getRelevancyScore() + " -> rank: " + query.getResultsMap().get(docId).getRank() + "\nTitle: " + query.getResultsMap().get(docId).getTitle() + "\nSnippet: " + query.getResultsMap().get(docId).getSnippet() + "\n");
+					}
+					System.out.println("Query execution time ==> " + queryTime + " seconds");
+					
+				} catch (QueryParserException e) {
+					e.printStackTrace();
+				} catch (ScorerException e) {
+					e.printStackTrace();
+				}
+
+			}
+			sbBuffer.insert(0, "numResults=" + numResults + "\n\r");
+			stream.println(sbBuffer.toString());
+
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public PrintStream getsPrintStream() {
+		return stream;
 	}
 
 	/**
@@ -96,7 +191,6 @@ public class SearchRunner {
 	 * @return true if supported, false otherwise
 	 */
 	public static boolean wildcardSupported() {
-		// TODO: CHANGE THIS TO TRUE ONLY IF WILDCARD BONUS ATTEMPTED
 		return false;
 	}
 
@@ -107,7 +201,6 @@ public class SearchRunner {
 	 *         possible expansions as values if exist, null otherwise
 	 */
 	public Map<String, List<String>> getQueryTerms() {
-		// TODO:IMPLEMENT THIS METHOD IFF WILDCARD BONUS ATTEMPTED
 		return null;
 	}
 
@@ -117,7 +210,6 @@ public class SearchRunner {
 	 * @return true if supported, false otherwise
 	 */
 	public static boolean spellCorrectSupported() {
-		// TODO: CHANGE THIS TO TRUE ONLY IF SPELLCHECK BONUS ATTEMPTED
 		return false;
 	}
 
@@ -129,7 +221,6 @@ public class SearchRunner {
 	 *         the given query
 	 */
 	public List<String> getCorrections() {
-		// TODO: IMPLEMENT THIS METHOD IFF SPELLCHECK EXECUTED
 		return null;
 	}
 }

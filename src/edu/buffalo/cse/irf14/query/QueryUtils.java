@@ -16,6 +16,8 @@ public class QueryUtils {
 				zone = IndexType.AUTHOR;
 			} else if (zoneString.equals("term")) {
 				zone = IndexType.TERM;
+			} else {
+				zone = IndexType.TERM;
 			}
 		}
 		return zone;

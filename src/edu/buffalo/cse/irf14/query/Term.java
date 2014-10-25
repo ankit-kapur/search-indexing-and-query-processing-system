@@ -97,7 +97,7 @@ public class Term extends Expression {
 		String indexType = null;
 		IndexType indexTypeObject = null;
 		String filteredQueryTerm = null;
-		Long termId;
+		Long termId = null;
 		Character firstChar;
 		AnalyzerFactory analyzerFactory = AnalyzerFactory.getInstance();
 		Analyzer analyzer = null;
@@ -108,14 +108,14 @@ public class Term extends Expression {
 			if (queryTerm.contains(")")) {
 				queryTerm = queryTerm.replace(")", "");
 			}
-			
+
 			indexType = queryTerm.substring(0, queryTerm.indexOf(":")).toLowerCase();
-			String termText = queryTerm.substring(queryTerm.indexOf(":")+1, queryTerm.length());
-			
-//			Token token = new Token();
-//			token.setTermText(termText);
-//			TokenStream tokenStream = new TokenStream();
-//			tokenStream.addTokenToStream(token);
+			String termText = queryTerm.substring(queryTerm.indexOf(":") + 1, queryTerm.length());
+
+			// Token token = new Token();
+			// token.setTermText(termText);
+			// TokenStream tokenStream = new TokenStream();
+			// tokenStream.addTokenToStream(token);
 
 			Tokenizer tokenizer = new Tokenizer();
 			TokenStream tokenStream = null;
@@ -161,10 +161,10 @@ public class Term extends Expression {
 			token.setTermText(queryTerm);
 			TokenStream tokenStream = new TokenStream();
 			tokenStream.addTokenToStream(token);
-			
+
 			analyzer = analyzerFactory.getAnalyzerForField(FieldNames.CONTENT, tokenStream);
 			analyzer.processThroughFilters();
-			
+
 			tokenStream = analyzer.getStream();
 			token = tokenStream.getCurrent();
 			filteredQueryTerm = token.getTermText();
@@ -174,36 +174,51 @@ public class Term extends Expression {
 		zone = QueryUtils.getZoneTypeByZoneName(indexType);
 
 		IndexReader indexReader = IndexesAndDictionaries.getIndexByType(indexTypeObject);
-		Map<String, DictionaryMetadata> termDictionary = indexReader.termDictionary;
-		DictionaryMetadata dictionaryMetadata = termDictionary.get(termText);
-		firstChar = termText.toLowerCase().charAt(0);
-		termId = dictionaryMetadata.getTermId();
-		///////// TODO NULL CHECK
-		
-		Map<Character, Map<Long, Map<Long, TermMetadataForThisDoc>>> index = indexReader.index;
-		Map<Long, TermMetadataForThisDoc> postingsMap = index.get(firstChar).get(termId);
+		if (indexReader != null) {
+			Map<String, DictionaryMetadata> termDictionary = indexReader.termDictionary;
+			DictionaryMetadata dictionaryMetadata = termDictionary.get(termText);
+			if (dictionaryMetadata != null) {
+				termId = dictionaryMetadata.getTermId();
+				// /////// TODO NULL CHECK
 
-		for (Long docId : postingsMap.keySet()) {
-			DocMetaData docMetaData = null;
-			if (docMap.containsKey(docId)) {
-				docMetaData = docMap.get(docId);
-			} else {
-				docMetaData = new DocMetaData();
+				firstChar = termText.toLowerCase().charAt(0);
+				Map<Character, Map<Long, Map<Long, TermMetadataForThisDoc>>> index = indexReader.index;
+				Map<Long, TermMetadataForThisDoc> postingsMap = index.get(firstChar).get(termId);
+				if (postingsMap != null) {
+					for (Long docId : postingsMap.keySet()) {
+						DocMetaData docMetaData = null;
+						if (docMap.containsKey(docId)) {
+							docMetaData = docMap.get(docId);
+						} else {
+							docMetaData = new DocMetaData();
+						}
+
+						/* Set the zone in the term-metadata map */
+						Map<Long, TermMetadataForThisDoc> termMetaDataMap = docMetaData.getTermMetaDataMap();
+						TermMetadataForThisDoc termMetadata = postingsMap.get(docId);
+						termMetadata.setZone(zone);
+						termMetaDataMap.put(termId, termMetadata);
+						docMetaData.setTermMetaDataMap(termMetaDataMap);
+
+						/*- Add query-term to the list that holds every
+						 * term in the query
+						 */
+						if (!Query.getQueryTermList().keySet().contains(termId))
+							Query.addQueryTermToList(termId, zone);
+
+						docMap.put(docId, docMetaData);
+					}
+				}
 			}
-
-			/* Set the zone in the term-metadata map */
-			Map<Long, TermMetadataForThisDoc> termMetaDataMap = docMetaData.getTermMetaDataMap();
-			TermMetadataForThisDoc termMetadata = postingsMap.get(docId);
-			termMetadata.setZone(zone);
-			termMetaDataMap.put(termId, termMetadata);
-			docMetaData.setTermMetaDataMap(termMetaDataMap);
-
-			/* Add query-term to the list that holds every term in the query */
-			if (!Query.getQueryTermList().keySet().contains(termId))
-				Query.addQueryTermToList(termId, zone);
-
-			docMap.put(docId, docMetaData);
 		}
+		/*
+		 * Map<Long, DocumentDictionaryEntry>
+		 * map2=indexReader.getDocumentDictionary(); DocumentDictionaryEntry
+		 * documentDictionaryEntry; for(Long docId:docMap.keySet()) {
+		 * documentDictionaryEntry=map2.get(docId);
+		 * System.out.println("Id-->"+
+		 * docId+"Name-->"+documentDictionaryEntry.getDocumentName()); }
+		 */
 		return docMap;
 	}
 }

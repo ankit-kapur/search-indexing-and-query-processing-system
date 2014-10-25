@@ -42,7 +42,7 @@ public class NOT extends Expression {
 	public Map<Long, DocMetaData> getPostings() {
 		/*- Recursively calling the left and right postings and intersecting them. */
 		Map<Long, DocMetaData> leftTermPostingMap = leftExpression.getPostings();
-		Map<Long, DocMetaData> rightTermPostingMap = leftExpression.getPostings();
+		Map<Long, DocMetaData> rightTermPostingMap = rightExpression.getPostings();
 		Map<Long, DocMetaData> combinedMap = new HashMap<Long, DocMetaData>();
 
 		for (Long docId : leftTermPostingMap.keySet()) {

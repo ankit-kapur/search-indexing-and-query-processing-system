@@ -11,11 +11,11 @@ import edu.buffalo.cse.irf14.index.IndexType;
  *
  */
 public class Query {
-	/*- Method to convert given parsed query into string */
 	private String parsedQuery;
 	private Map<Long, DocMetaData> documentMap;
 	private Map<Long, QueryResults> resultsMap;
 	private static Map<Long, IndexType> queryTermList;
+	private String queryTime;
 
 	Query() {
 		queryTermList = new HashMap<Long, IndexType>();
@@ -59,5 +59,11 @@ public class Query {
 	}
 	public void setDocumentMap(Map<Long, DocMetaData> documentMap) {
 		this.documentMap = documentMap;
+	}
+	public String getQueryTime() {
+		return queryTime;
+	}
+	public void setQueryTime(String queryTime) {
+		this.queryTime = queryTime;
 	}
 }

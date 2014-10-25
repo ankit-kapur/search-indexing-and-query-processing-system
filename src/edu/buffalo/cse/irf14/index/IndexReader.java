@@ -1,6 +1,3 @@
-/**
- * 
- */
 package edu.buffalo.cse.irf14.index;
 
 import java.io.BufferedInputStream;
@@ -157,8 +154,7 @@ public class IndexReader {
 		int totalKeyTerms = 0;
 		String gMethodName = "getTotalKeyTerms";
 		try {
-			if (indexType != null) 
-			{
+			if (indexType != null) {
 				for (int i = 0; i < termDictionary.keySet().size(); i++) {
 					totalKeyTerms++;
 				}
@@ -374,25 +370,29 @@ public class IndexReader {
 		}
 		return returnMap;
 	}
-	
+
 	public void getTermInformation() {
 		/* ID here */
-//		index.get(0000);
+		// index.get(0000);
 	}
-	
+
 	/* Testing methods */
 	public long getCorpusSize() {
 		return docDictionary.getTotalNumberOfDocs();
 	}
-	
+
+	public long getAvgLenOfDocuments() {
+		return docDictionary.getAvgLenOfDocInCorpus();
+	}
+
 	public Map<String, DictionaryMetadata> getTermDictionary() {
 		return termDictionary;
 	}
-	
+
 	public Map<Long, DocumentDictionaryEntry> getDocumentDictionary() {
 		return documentDictionary;
 	}
-	
+
 	public Map<Character, Map<Long, Map<Long, TermMetadataForThisDoc>>> getIndex() {
 		return index;
 	}

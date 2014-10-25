@@ -39,12 +39,12 @@ public class QueryParser {
 		final String OPAND = "AND";
 		final String OPOR = "OR";
 		final String OPNOT = "NOT";
-		System.out.println("The Entered Query Is-->" + userQuery);
+		System.out.println("Raw query: " + userQuery);
 		String proccessedQuery = "";
 		PreProcessingQuery pQuery = new PreProcessingQuery();
 		try {
 			proccessedQuery = pQuery.preProcessingQuery(userQuery, defaultOperator);
-			System.out.println("The PreProcessed Query Is-->" + proccessedQuery);
+//			System.out.println("The PreProcessed Query Is-->" + proccessedQuery);
 			String[] queryTokens = proccessedQuery.split(" ");
 			StringBuffer sbBuffer = new StringBuffer();
 			Stack<Expression> operandStack = new Stack<Expression>();
@@ -127,7 +127,7 @@ public class QueryParser {
 			}
 			Expression expression = operandStack.pop();
 			String finalParsedQuery = expression.toString();
-			System.out.println("The Final Processed query is-->" + "{" + finalParsedQuery + "}");
+			System.out.println("Processed query: " + "{" + finalParsedQuery + "}\n");
 			
 			Map<Long, DocMetaData> docMap = expression.getPostings();
 			query.setDocumentMap(docMap);

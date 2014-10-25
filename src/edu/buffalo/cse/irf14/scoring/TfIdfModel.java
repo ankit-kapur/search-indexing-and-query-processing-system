@@ -1,8 +1,6 @@
 package edu.buffalo.cse.irf14.scoring;
 
-import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 import edu.buffalo.cse.irf14.analysis.util.DictionaryMetadata;
@@ -17,8 +15,10 @@ import edu.buffalo.cse.irf14.query.QueryResults;
 public class TfIdfModel implements ScoreModel {
 
 	@Override
-	public Query calculateScore(Query query) {
+	public Query calculateScore(Query query) throws ScorerException {
+
 		Map<Long, DocMetaData> docMap = query.getDocumentMap();
+		Map<Long, Double> scoreMap = new HashMap<Long, Double>();
 
 		/* Cycle through each doc found */
 		for (long docId : docMap.keySet()) {
@@ -39,7 +39,7 @@ public class TfIdfModel implements ScoreModel {
 				/* Get information from the dictionary */
 				IndexReader indexReader = IndexesAndDictionaries.getIndexByType(zone);
 				Map<String, DictionaryMetadata> termDictionary = indexReader.getTermDictionary();
-				String term = getTermById(termId, termDictionary);
+				String term = ScorerUtils.getTermById(termId, termDictionary);
 				DictionaryMetadata dictionaryMetadata = termDictionary.get(term);
 
 				/* Calculate idf */
@@ -65,69 +65,48 @@ public class TfIdfModel implements ScoreModel {
 				double productOfWeights = w_tq * wf_td;
 				score += productOfWeights;
 			}
-			
+
 			/* Length normalize with Euclidean weights */
 			double euclideanWeight = IndexesAndDictionaries.getIndexByType(IndexType.TERM).getDocumentDictionary().get(docId).getEuclideanWeight();
-			score = score/euclideanWeight;
-			
+			score = score / euclideanWeight;
+
 			/* Insert the score calculated for this doc into the query object */
-			QueryResults queryResult = new QueryResults();
-			queryResult.setRelevancyScore(score);
-			query.addResultToMap(docId, queryResult);
+			scoreMap.put(docId, score);
 		}
 		
-		/* Assign ranks (by sorting scores) */
-		assignRanks(query);
-
-		/* View ranked map */
-		for (long docId : query.getResultsMap().keySet()) {
-			System.out.println(IndexesAndDictionaries.getIndexByType(IndexType.TERM).getDocumentDictionary().get(docId).getDocumentName() + " -> score: " + query.getResultsMap().get(docId).getRelevancyScore() + " -> rank: " + query.getResultsMap().get(docId).getRank());
-		}
-		
-		return query;
-	}
-
-	private Query assignRanks(Query query) {
-		int rank = 1;
-		List<Long> done = new ArrayList<Long>();
-		Map<Long, QueryResults> resultsMap = query.getResultsMap();
-
-		while (rank <= resultsMap.size()) {
-			double max = 0.0;
-			long maxId = 0;
-			for (long docId : resultsMap.keySet()) {
-				if (!done.contains(docId)) {
-					QueryResults result = resultsMap.get(docId);
-					double score = result.getRelevancyScore();
-					if (score > max) {
-						max = score;
-						maxId = docId;
-					}
-				}
+		double max = 0.0;
+		for (Long documentId : scoreMap.keySet()) {
+			double score = scoreMap.get(documentId);
+			if (score > max) {
+				max = score;
 			}
-
-			/* Add to the 'done' list */
-			done.add(maxId);
-			resultsMap.get(maxId).setRank(rank++);
+		}
+		for (Long documentId : scoreMap.keySet()) {
+			QueryResults queryResult = new QueryResults();
+			queryResult.setRelevancyScore(scoreMap.get(documentId) / max);
+			query.addResultToMap(documentId, queryResult);
 		}
 
+		/* Assign ranks (by sorting scores) */
+		ScorerUtils.assignRanks(query);
+
+		/* Sort according to rank */
+		ScorerUtils.sortAccordingtoRank(query);
+		
+		/* Generate snippets */
+		ScorerUtils.generateSnippets(query);
+
+		/* Clip no. of results to 10 */
+		ScorerUtils.clipResults(query);
+		
 		return query;
 	}
 
+	
 	private double calculateTfWeight(double value) {
 		double weight = 0.0;
 		if (value > 0)
-			weight = 1.0 + (double)Math.log10(value);
+			weight = 1.0 + (double) Math.log10(value);
 		return weight;
-	}
-
-	private String getTermById(Long termId, Map<String, DictionaryMetadata> termDictionary) {
-		String term = null;
-		for (String key : termDictionary.keySet()) {
-			if (termDictionary.get(key).getTermId() == termId) {
-				term = key;
-			}
-		}
-		return term;
 	}
 }

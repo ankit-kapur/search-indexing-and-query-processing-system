@@ -43,10 +43,8 @@ public class IndexTester {
 		System.out.println("\nTerm index...");
 		printIndex(termIndex, termDict, docDict);
 
-		/*
-		 * Display all info about the term such as postings list, positional
-		 * indexes, term frequency
-		 */
+		/*- Display all info about the term such as postings list, positional
+		 * indexes, term frequency */
 		categoryIndex.getTermInformation();
 	}
 
@@ -78,5 +76,4 @@ public class IndexTester {
 		}
 		return termText;
 	}
-
 }
