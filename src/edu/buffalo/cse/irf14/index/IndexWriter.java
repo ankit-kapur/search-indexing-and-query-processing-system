@@ -26,6 +26,9 @@ import edu.buffalo.cse.irf14.document.FieldNames;
  */
 public class IndexWriter {
 
+	/* k-gram index */
+	KgramIndex kgramIndex = new KgramIndex(3);
+	
 	/* Data structures for dictionaries and indexes */
 	Map<Long, DocumentDictionaryEntry> documentDictionary = new HashMap<Long, DocumentDictionaryEntry>();
 	Map<String, DictionaryMetadata> dictionary = new HashMap<String, DictionaryMetadata>();
@@ -37,7 +40,7 @@ public class IndexWriter {
 
 	/* File readers/writers */
 	String indexDirectory;
-	static String fileExtension = ".txt";
+	static String fileExtension = ".dat";
 	public static String termIndexFileNamePrefix = File.separator + "term_index_";
 	public static String categoryIndexFileNamePrefix = File.separator + "category_index_";
 	public static String authorIndexFileNamePrefix = File.separator + "author_index_";
@@ -421,11 +424,10 @@ public class IndexWriter {
 							tokenCounter++;
 						}
 					}
-
-					/* Increment the counter for document IDs */
-					docIdCounter++;
-
 				}
+
+				/* Increment the counter for document IDs */
+				docIdCounter++;
 			}
 
 			/*- If this is a duplicate document, we only want to update the category dictionary and index */
@@ -656,6 +658,16 @@ public class IndexWriter {
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new IndexerException("IndexerException occured while writing to indexer files");
+		}
+	}
+	
+	public void addTermToKgramIndex(String term) {
+		if (term != null && term.length() > 0) {
+			if (term.length() <= kgramIndex.getK()) {
+//				kgramIndex.addToIndex(key, termId);
+			} else {
+				
+			}
 		}
 	}
 }
