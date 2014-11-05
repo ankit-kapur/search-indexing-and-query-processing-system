@@ -1,7 +1,6 @@
 package edu.buffalo.cse.irf14.query;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.Scanner;
 
 import edu.buffalo.cse.irf14.index.IndexReader;
@@ -46,18 +45,25 @@ public class IndexesAndDictionaries {
 
 	public static String readDocFromFlattenedDir(String docName) throws ScorerException {
 		String fileContent = "";
+		String fileName = null;
 		try {
 			if (corpusDir != null && docName != null) {
-				File file = new File(corpusDir + File.separator + docName);
+				fileName = corpusDir + File.separator + docName;
+				File file = new File(fileName);
 				if (file.exists()) {
-					fileContent = new Scanner(file).useDelimiter("\\A").next();
+					Scanner scanner = new Scanner(file);
+					if (scanner != null) {
+						scanner.useDelimiter("\\A");
+						if (scanner.hasNext())
+							fileContent = scanner.next();
+					}
 				} else {
 					throw new ScorerException("File does not exist: " + corpusDir + File.separator + docName);
 				}
 			}
-		} catch (FileNotFoundException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
-			throw new ScorerException(e.getMessage());
+			throw new ScorerException("Problem reading from file: " + fileName + " - " + e.getMessage());
 		}
 		return fileContent;
 	}

@@ -143,10 +143,12 @@ public class Term extends Expression {
 			analyzer.processThroughFilters();
 			tokenStream = analyzer.getStream();
 			Token token = null;
-			if (tokenStream.hasNext()) {
+			if (tokenStream != null && tokenStream.hasNext()) {
 				token = tokenStream.next();
 			}
-			filteredQueryTerm = token.getTermText();
+			if (token != null) {
+				filteredQueryTerm = token.getTermText();
+			}
 		} else {
 			indexType = "term";
 			indexTypeObject = IndexType.TERM;
@@ -167,7 +169,9 @@ public class Term extends Expression {
 
 			tokenStream = analyzer.getStream();
 			token = tokenStream.getCurrent();
-			filteredQueryTerm = token.getTermText();
+			if (token != null) {
+				filteredQueryTerm = token.getTermText();
+			}
 		}
 
 		termText = filteredQueryTerm;

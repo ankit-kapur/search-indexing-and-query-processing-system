@@ -4,7 +4,6 @@
 package edu.buffalo.cse.irf14.document;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -31,15 +30,17 @@ public class Parser {
 	public static Document parse(String fileName) throws ParserException {
 		String fileId = null, category = null, title = null, author = null, authorOrg = null, newsDate = null, place = null, content = null;
 		Document document = new Document();
+		Pattern pattern = null;
+		Matcher matcher = null;
 
 		try {
 			File file = null;
 			if (fileName == null || fileName.equals("")) {
-				throw new ParserException();
+				throw new ParserException("Empty file name");
 			} else {
 				file = new File(fileName);
 				if (!file.exists()) {
-					throw new ParserException();
+					throw new ParserException("File does not exist: " + fileName);
 				}
 			}
 
@@ -48,10 +49,15 @@ public class Parser {
 			/* Read file's body into a single string */
 			String fileBody = null;
 			try {
-				fileBody = new Scanner(file).useDelimiter("\\A").next();
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
+				Scanner scanner = new Scanner(file);
+				if (scanner != null) {
+					scanner.useDelimiter("\\A");
+					if (scanner.hasNext())
+						fileBody = scanner.next();
+				}
+			} catch (Exception e) {
 				e.printStackTrace();
+				throw new ParserException("Problem reading from file: " + fileName);
 			}
 
 			/* File ID */
@@ -63,105 +69,106 @@ public class Parser {
 			category = fileName.substring(categoryPosition, fileNamePosition - 1);
 
 			/* Title */
-			Pattern pattern = Pattern.compile("[\\r\\n\\s]*");
-			Matcher matcher = pattern.matcher(fileBody);
-			if (matcher.find()) {
-				lastPointerPosition += matcher.end();
-				pattern = Pattern.compile(".*");
-				matcher = pattern.matcher(fileBody.substring(lastPointerPosition));
-				if (matcher.find()) {
-					title = matcher.group();
-					
-					/* Remove any new line characters */
-					if (title != null) {
-						title = title.replaceAll("[\\n\\r]+", " ");
-					}
-					
-					titleCount++;
-					lastPointerPosition += matcher.end();
-				}
-			}
-
-			/* Author */
-			pattern = Pattern.compile("[\\r\\n\\s]*");
-			matcher = pattern.matcher(fileBody.substring(lastPointerPosition));
-			if (matcher.find()) {
-				lastPointerPosition += matcher.end();
-				pattern = Pattern.compile("<[aA][uU][tT][hH][oO][rR]>\\s*[bB][yY]\\s*");
-				matcher = pattern.matcher(fileBody.substring(lastPointerPosition));
+			if (fileBody != null) {
+				pattern = Pattern.compile("[\\r\\n\\s]*");
+				matcher = pattern.matcher(fileBody);
 				if (matcher.find()) {
 					lastPointerPosition += matcher.end();
-					pattern = Pattern.compile("(.+?)</AUTHOR>\\s*");
+					pattern = Pattern.compile(".*");
 					matcher = pattern.matcher(fileBody.substring(lastPointerPosition));
-
 					if (matcher.find()) {
-						author = matcher.group().substring(0, matcher.group().indexOf("<"));
-						if (author != null) {
-							/* Remove any new line characters */
-							author = author.replaceAll("[\\n\\r]+", " ");
-							
-							/* Find author orgs */
-							if (author.contains(",")) {
-								authorOrg = author.substring(author.indexOf(",") + 1).trim();
-								author = author.substring(0, author.indexOf(","));
-							}
-							authorCount++;
-							lastPointerPosition += matcher.end();
-						}
-					}
-				}
-			}
-
-			/* Date */
-			int dateStartPosition = -1, dateEndPosition = -1;
-			pattern = Pattern.compile("[\\r\\n\\s]*");
-			matcher = pattern.matcher(fileBody.substring(lastPointerPosition));
-			if (matcher.find()) {
-				lastPointerPosition += matcher.end();
-				pattern = Pattern.compile("(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)\\s*[\\d]*");
-				matcher = pattern.matcher(fileBody.substring(lastPointerPosition).toLowerCase());
-
-				if (matcher.find()) {
-					dateStartPosition = matcher.start() + lastPointerPosition;
-					dateEndPosition = matcher.end() + lastPointerPosition;
-					newsDate = fileBody.substring(dateStartPosition, dateEndPosition);
-					
-					/* Remove any new line characters */
-					if (newsDate != null) {
-						newsDate = newsDate.replaceAll("[\\n\\r]+", " ");
-					}
-					
-					dateCount++;
-
-					/* Place */
-					if (fileBody.substring(lastPointerPosition, dateStartPosition).lastIndexOf(",") >= 0) {
-						int placeEndPosition = fileBody.substring(lastPointerPosition, dateStartPosition).lastIndexOf(",") + lastPointerPosition;
-						place = fileBody.substring(lastPointerPosition, placeEndPosition);
+						title = matcher.group();
 
 						/* Remove any new line characters */
-						if (place != null) {
-							place = place.replaceAll("[\\n\\r]+", " ");
+						if (title != null) {
+							title = title.replaceAll("[\\n\\r]+", " ");
 						}
-						
-						placeCount++;
-					}
-					lastPointerPosition = dateEndPosition;
-				}
-			}
 
-			/* Content */
-			if (fileBody.substring(lastPointerPosition) != null) {
-				if (fileBody.substring(lastPointerPosition).trim() != null && !fileBody.substring(lastPointerPosition).isEmpty()) {
-					content = fileBody.substring(lastPointerPosition).trim();
-					content = (content.charAt(0) == '-') ? content.substring(1).trim() : content;
+						titleCount++;
+						lastPointerPosition += matcher.end();
+					}
 				}
-				
-				/* Remove any new line characters */
-				if (content != null) {
-					content = content.replaceAll("[\\n\\r]+", " ");
+
+				/* Author */
+				pattern = Pattern.compile("[\\r\\n\\s]*");
+				matcher = pattern.matcher(fileBody.substring(lastPointerPosition));
+				if (matcher.find()) {
+					lastPointerPosition += matcher.end();
+					pattern = Pattern.compile("<[aA][uU][tT][hH][oO][rR]>\\s*[bB][yY]\\s*");
+					matcher = pattern.matcher(fileBody.substring(lastPointerPosition));
+					if (matcher.find()) {
+						lastPointerPosition += matcher.end();
+						pattern = Pattern.compile("(.+?)</AUTHOR>\\s*");
+						matcher = pattern.matcher(fileBody.substring(lastPointerPosition));
+
+						if (matcher.find()) {
+							author = matcher.group().substring(0, matcher.group().indexOf("<"));
+							if (author != null) {
+								/* Remove any new line characters */
+								author = author.replaceAll("[\\n\\r]+", " ");
+
+								/* Find author orgs */
+								if (author.contains(",")) {
+									authorOrg = author.substring(author.indexOf(",") + 1).trim();
+									author = author.substring(0, author.indexOf(","));
+								}
+								authorCount++;
+								lastPointerPosition += matcher.end();
+							}
+						}
+					}
 				}
-				
-				contentCount++;
+				/* Date */
+				int dateStartPosition = -1, dateEndPosition = -1;
+				pattern = Pattern.compile("[\\r\\n\\s]*");
+				matcher = pattern.matcher(fileBody.substring(lastPointerPosition));
+				if (matcher.find()) {
+					lastPointerPosition += matcher.end();
+					pattern = Pattern.compile("(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|jun(e)?|jul(y)?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)\\s*[\\d]*");
+					matcher = pattern.matcher(fileBody.substring(lastPointerPosition).toLowerCase());
+
+					if (matcher.find()) {
+						dateStartPosition = matcher.start() + lastPointerPosition;
+						dateEndPosition = matcher.end() + lastPointerPosition;
+						newsDate = fileBody.substring(dateStartPosition, dateEndPosition);
+
+						/* Remove any new line characters */
+						if (newsDate != null) {
+							newsDate = newsDate.replaceAll("[\\n\\r]+", " ");
+						}
+
+						dateCount++;
+
+						/* Place */
+						if (fileBody.substring(lastPointerPosition, dateStartPosition).lastIndexOf(",") >= 0) {
+							int placeEndPosition = fileBody.substring(lastPointerPosition, dateStartPosition).lastIndexOf(",") + lastPointerPosition;
+							place = fileBody.substring(lastPointerPosition, placeEndPosition);
+
+							/* Remove any new line characters */
+							if (place != null) {
+								place = place.replaceAll("[\\n\\r]+", " ");
+							}
+
+							placeCount++;
+						}
+						lastPointerPosition = dateEndPosition;
+					}
+				}
+
+				/* Content */
+				if (fileBody.substring(lastPointerPosition) != null) {
+					if (fileBody.substring(lastPointerPosition).trim() != null && !fileBody.substring(lastPointerPosition).isEmpty()) {
+						content = fileBody.substring(lastPointerPosition).trim();
+						content = (content.charAt(0) == '-') ? content.substring(1).trim() : content;
+					}
+
+					/* Remove any new line characters */
+					if (content != null) {
+						content = content.replaceAll("[\\n\\r]+", " ");
+					}
+
+					contentCount++;
+				}
 			}
 
 			if (fileId.equals("") || fileId.equals("")) {

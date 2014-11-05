@@ -12,7 +12,7 @@ public class SearchTester {
 //		String userQuery = "author:mankwoski OR disney";
 //		String userQuery = "DISNEY";
 //		String userQuery = "author:(brian OR richard) AND place:(paris OR washington)";
-		String userQuery = "hostile bids mergers takeovers acquisitions";
+		String userQuery = "bids mergers takeovers acquisitions";
 		
 		String indexDir = System.getProperty("user.dir") + File.separator + "indexdir";
 		String corpusDir = System.getProperty("user.dir") + File.separator + "flattened";

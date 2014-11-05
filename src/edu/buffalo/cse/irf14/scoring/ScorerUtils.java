@@ -3,6 +3,7 @@ package edu.buffalo.cse.irf14.scoring;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -182,10 +183,14 @@ public class ScorerUtils {
 
 	public static void clipResults(Query query) {
 		Map<Long, QueryResults> resultsMap = query.getResultsMap();
+		Map<Long, QueryResults> newMap = new LinkedHashMap<Long, QueryResults>(); 
 		if (resultsMap.size() > 10) {
-			for (long i = 10; i < resultsMap.size(); i++) {
-				resultsMap.remove(i);
+			Iterator<Long> iterator = resultsMap.keySet().iterator();
+			while (iterator.hasNext() && newMap.size() < 10) {
+				long key = iterator.next().longValue();
+				newMap.put(key, resultsMap.get(key));
 			}
+			query.setResultsMap(newMap);
 		}
 	}
 }
