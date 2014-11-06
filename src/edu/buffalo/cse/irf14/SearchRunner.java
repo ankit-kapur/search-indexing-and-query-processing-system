@@ -122,6 +122,8 @@ public class SearchRunner {
 			e.printStackTrace();
 		} catch (ScorerException e) {
 			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 
 	}
@@ -194,7 +196,29 @@ public class SearchRunner {
 					/* Start time */
 					long startTime = new Date().getTime();
 
-					query = QueryParser.parse(queryMap.get(queryId), "OR");
+					String userQuery = queryMap.get(queryId);
+					/* Any wildcard terms present? */
+					if (userQuery.contains("*") || userQuery.contains("?")) {
+						while (userQuery.contains("*")) {
+							int asteriskPos = userQuery.indexOf("*");
+
+							wildCardTerm = extractTerm(userQuery, asteriskPos, '*');
+							Map<String, List<String>> matchedTermMap = getQueryTerms();
+							List<String> matchedTermList = matchedTermMap.get(wildCardTerm);
+							if (matchedTermList == null || matchedTermList.isEmpty()) {
+								throw new ScorerException("No wildcard expansions found in corpus for term: " + wildCardTerm);
+							}
+							String expandedString = "(";
+							for (String termMatched : matchedTermList)
+								expandedString += termMatched + " ";
+							expandedString = expandedString.trim() + ")";
+
+							/* Replace the wildcard term with the expanded string */
+							userQuery = userQuery.replace(wildCardTerm, expandedString);
+						}
+					}
+					
+					query = QueryParser.parse(userQuery, "OR");
 					ScoreModel scoreModel = null;
 					ModelFactory modelFactory = ModelFactory.getInstance();
 					scoreModel = modelFactory.getModelForQuery(ScoringModel.OKAPI);
@@ -223,6 +247,8 @@ public class SearchRunner {
 				} catch (QueryParserException e) {
 					e.printStackTrace();
 				} catch (ScorerException e) {
+					e.printStackTrace();
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 
@@ -263,12 +289,14 @@ public class SearchRunner {
 	 */
 	public Map<String, List<String>> getQueryTerms() {
 		String term = wildCardTerm;
-
+		Map<String, List<String>> map = null;
+		
 		List<String> kgrams = new ArrayList<String>();
 		KgramIndex kgramIndexObj = IndexesAndDictionaries.getKgramIndex();
 		Map<String, List<Long>> kgramIndex = kgramIndexObj.getIndex();
 		int k = kgramIndexObj.getK();
 
+		try {
 		/* Break the query term down into kgrams */
 		if (term != null && term.length() > 0) {
 			if (term != null) {
@@ -330,8 +358,11 @@ public class SearchRunner {
 			matchedTerms.add(termString);
 		} }
 
-		Map<String, List<String>> map = new HashMap<String, List<String>>();
+		map = new HashMap<String, List<String>>();
 		map.put(wildCardTerm, matchedTerms);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		return map;
 	}
 

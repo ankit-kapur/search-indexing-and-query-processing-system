@@ -41,9 +41,9 @@ public class OR extends Expression {
 	}
 
 	@Override
-	public Map<Long, DocMetaData> getPostings() {
+	public Map<Long, DocMetaData> getPostings() throws Exception {
 		Map<Long, DocMetaData> leftTermPostingMap = leftExpression.getPostings();
-		Map<Long, DocMetaData> rightTermPostingMap = leftExpression.getPostings();
+		Map<Long, DocMetaData> rightTermPostingMap = rightExpression.getPostings();
 		Map<Long, DocMetaData> unionMap = new HashMap<Long, DocMetaData>();
 
 		unionMap.putAll(leftTermPostingMap);

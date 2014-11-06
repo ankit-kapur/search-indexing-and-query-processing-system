@@ -582,6 +582,9 @@ public class IndexWriter {
 		} catch (TokenizerException e) {
 			System.out.println("Exception caught");
 			e.printStackTrace();
+		} catch (Exception e) {
+			System.out.println("Exception caught");
+			e.printStackTrace();
 		}
 	}
 
@@ -721,7 +724,7 @@ public class IndexWriter {
 		}
 	}
 
-	public void addTermToKgramIndex(String term, long termId) {
+	public void addTermToKgramIndex(String term, long termId) throws Exception {
 		if (term != null && term.length() > 0) {
 			term = "$" + term + "$";
 			if (term.length() < kgramIndex.getK()) {

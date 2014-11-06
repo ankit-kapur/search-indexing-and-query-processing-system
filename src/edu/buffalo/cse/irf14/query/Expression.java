@@ -7,5 +7,5 @@ public abstract class Expression {
 	/* Abstract methods */
 	@Override
 	public abstract String toString();
-	public abstract Map<Long, DocMetaData> getPostings();
+	public abstract Map<Long, DocMetaData> getPostings() throws Exception;
 }

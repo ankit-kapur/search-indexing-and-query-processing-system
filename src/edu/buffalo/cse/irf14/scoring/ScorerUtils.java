@@ -19,7 +19,7 @@ import edu.buffalo.cse.irf14.query.Query;
 import edu.buffalo.cse.irf14.query.QueryResults;
 
 public class ScorerUtils {
-	public static void generateSnippets(Query query) throws ScorerException {
+	public static void generateSnippets(Query query) throws Exception {
 
 		Map<Long, QueryResults> resultsMap = query.getResultsMap();
 		Map<Long, DocumentDictionaryEntry> docDictionary = IndexesAndDictionaries.getIndexByType(IndexType.TERM).getDocumentDictionary();
@@ -129,7 +129,7 @@ public class ScorerUtils {
 		}
 	}
 
-	public static Query assignRanks(Query query) {
+	public static Query assignRanks(Query query) throws Exception {
 		int rank = 1;
 		List<Long> done = new ArrayList<Long>();
 		Map<Long, QueryResults> resultsMap = query.getResultsMap();
@@ -156,7 +156,7 @@ public class ScorerUtils {
 		return query;
 	}
 
-	public static String getTermById(Long termId, Map<String, DictionaryMetadata> termDictionary) {
+	public static String getTermById(Long termId, Map<String, DictionaryMetadata> termDictionary) throws Exception {
 		String term = null;
 		for (String key : termDictionary.keySet()) {
 			if (termDictionary.get(key).getTermId() == termId) {
@@ -166,7 +166,7 @@ public class ScorerUtils {
 		return term;
 	}
 
-	public static Query sortAccordingtoRank(Query query) {
+	public static Query sortAccordingtoRank(Query query) throws Exception {
 		Map<Long, QueryResults> resultsMap = query.getResultsMap();
 		List<Map.Entry<Long, QueryResults>> results = new ArrayList<Map.Entry<Long, QueryResults>>(resultsMap.entrySet());
 		Collections.sort(results, new Comparator<Map.Entry<Long, QueryResults>>() {
@@ -185,7 +185,7 @@ public class ScorerUtils {
 		return query;
 	}
 
-	public static void clipResults(Query query) {
+	public static void clipResults(Query query) throws Exception {
 		Map<Long, QueryResults> resultsMap = query.getResultsMap();
 		Map<Long, QueryResults> newMap = new LinkedHashMap<Long, QueryResults>(); 
 		if (resultsMap.size() > 10) {

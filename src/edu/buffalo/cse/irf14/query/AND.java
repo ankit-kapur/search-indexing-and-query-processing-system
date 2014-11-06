@@ -43,7 +43,7 @@ public class AND extends Expression {
 	}
 
 	@Override
-	public Map<Long, DocMetaData> getPostings() {
+	public Map<Long, DocMetaData> getPostings() throws Exception {
 		/*- Recursively calling the left and right postings and intersecting them. */
 		Map<Long, DocMetaData> leftTermPostingMap = leftExpression.getPostings();
 		Map<Long, DocMetaData> rightTermPostingMap = rightExpression.getPostings();

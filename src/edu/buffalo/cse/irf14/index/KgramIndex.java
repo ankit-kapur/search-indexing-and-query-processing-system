@@ -25,7 +25,7 @@ public class KgramIndex implements Serializable {
 		this.index = index;
 	}
 	
-	public void addToIndex(String key, long termId) {
+	public void addToIndex(String key, long termId) throws Exception {
 		if (index.containsKey(key)) {
 			/* Already exists. Add termId to the list */
 			List<Long> list = index.get(key);

@@ -15,7 +15,7 @@ import edu.buffalo.cse.irf14.query.QueryResults;
 public class TfIdfModel implements ScoreModel {
 
 	@Override
-	public Query calculateScore(Query query) throws ScorerException {
+	public Query calculateScore(Query query) throws ScorerException, Exception {
 
 		Map<Long, DocMetaData> docMap = query.getDocumentMap();
 		Map<Long, Double> scoreMap = new HashMap<Long, Double>();

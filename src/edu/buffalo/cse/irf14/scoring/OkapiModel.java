@@ -19,7 +19,7 @@ public class OkapiModel implements ScoreModel {
 	public Map<Long, Double> OkapiScoreMap = new HashMap<Long, Double>();
 
 	@Override
-	public Query calculateScore(Query query) {
+	public Query calculateScore(Query query) throws Exception {
 		double lengthofDocument = 0.0;
 		double avgLenOfDocInCorpus = 0.0;
 		Map<Long, DocMetaData> docMap = query.getDocumentMap();

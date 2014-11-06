@@ -92,7 +92,7 @@ public class Term extends Expression {
 	}
 
 	@Override
-	public Map<Long, DocMetaData> getPostings() {
+	public Map<Long, DocMetaData> getPostings() throws Exception {
 		Map<Long, DocMetaData> docMap = new HashMap<Long, DocMetaData>();
 		String indexType = null;
 		IndexType indexTypeObject = null;
