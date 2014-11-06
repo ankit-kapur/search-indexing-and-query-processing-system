@@ -27,8 +27,9 @@ import edu.buffalo.cse.irf14.document.FieldNames;
 public class IndexWriter {
 
 	/* k-gram index */
-	KgramIndex kgramIndex = new KgramIndex(3);
-	
+	public static int k = 3;
+	KgramIndex kgramIndex = new KgramIndex(k);
+
 	/* Data structures for dictionaries and indexes */
 	Map<Long, DocumentDictionaryEntry> documentDictionary = new HashMap<Long, DocumentDictionaryEntry>();
 	Map<String, DictionaryMetadata> dictionary = new HashMap<String, DictionaryMetadata>();
@@ -48,6 +49,7 @@ public class IndexWriter {
 
 	public static String dictionaryFileName = File.separator + "dictionary" + fileExtension;
 	public static String docuDictFileName = File.separator + "dictionaryOfDocs" + fileExtension;
+	public static String kgramIndexFileName = File.separator + "kgramindex" + fileExtension;
 
 	/* File writer for document dictionary */
 	ObjectOutputStream docuDictionaryWriter = null;
@@ -177,9 +179,7 @@ public class IndexWriter {
 
 								/*- Increment the df counter only if this term 
 								 * is occuring in the doc for the first time */
-								if (termTrackerForThisDoc.contains(token.getTermText())) {
-									termTrackerForThisDoc.add(token.getTermText());
-								} else {
+								if (!termTrackerForThisDoc.contains(token.getTermText())) {
 									/*- Check if term dictionary already contains the term. If yes, get the
 									 * ID. If not, add the term to the dictionary */
 									if (dictionary.containsKey(token.getTermText())) {
@@ -190,6 +190,18 @@ public class IndexWriter {
 									} else {
 										DictionaryMetadata dictionaryMetadata = new DictionaryMetadata(termDictIdCounter++, 1);
 										dictionary.put(token.getTermText(), dictionaryMetadata);
+									}
+									
+									/* Add term to kgram index */
+									addTermToKgramIndex(token.getTermText(), termId);
+
+									/* Keep track of this term so that it is not added to the df value again */
+									termTrackerForThisDoc.add(token.getTermText());
+								} else {
+									if (dictionary.containsKey(token.getTermText())) {
+										termId = dictionary.get(token.getTermText()).getTermId();
+										/*- Increase overall term frequency in term-dictionary */
+										dictionary.get(token.getTermText()).setFrequency(dictionary.get(token.getTermText()).getFrequency() + 1);
 									}
 								}
 
@@ -249,7 +261,6 @@ public class IndexWriter {
 
 					if (doc.getField(fieldName) != null) {
 
-						
 						List<String> termTrackerForThisDoc = new ArrayList<String>();
 						fieldText = doc.getField(fieldName)[0];
 						TokenStream tokenstream = tokenizer.consume(fieldText);
@@ -273,10 +284,7 @@ public class IndexWriter {
 
 							/*- Increment the df counter only if this term 
 							 * is occuring in the doc for the first time */
-							if (termTrackerForThisDoc.contains(token.getTermText())) {
-								termTrackerForThisDoc.add(token.getTermText());
-							} else {
-
+							if (!termTrackerForThisDoc.contains(token.getTermText())) {
 								/*- Check if the dictionary already contains
 								 * the term. If yes, get the ID. If not, add
 								 * the term to the dictionary */
@@ -289,6 +297,18 @@ public class IndexWriter {
 								} else {
 									DictionaryMetadata dictionaryMetadata = new DictionaryMetadata(termDictIdCounter++, 1);
 									dictionary.put(token.getTermText(), dictionaryMetadata);
+								}
+								
+								/* Add term to kgram index */
+								addTermToKgramIndex(token.getTermText(), termId);
+								
+								/* Keep track of this term so that it is not added to the document dictionary again */
+								termTrackerForThisDoc.add(token.getTermText());
+							} else {
+								if (dictionary.containsKey(token.getTermText())) {
+									termId = dictionary.get(token.getTermText()).getTermId();
+									/*- Increase overall term frequency in term-dictionary */
+									dictionary.get(token.getTermText()).setFrequency(dictionary.get(token.getTermText()).getFrequency() + 1);
 								}
 							}
 
@@ -363,10 +383,7 @@ public class IndexWriter {
 
 							/*- Increment the df counter only if this term 
 							 * is occuring in the doc for the first time */
-							if (termTrackerForThisDoc.contains(token.getTermText())) {
-								termTrackerForThisDoc.add(token.getTermText());
-							} else {
-
+							if (!termTrackerForThisDoc.contains(token.getTermText())) {
 								/*- Check if the dictionary already contains the
 								 * term. If yes, get the ID. If not, add the term
 								 * to the dictionary */
@@ -379,6 +396,18 @@ public class IndexWriter {
 								} else {
 									DictionaryMetadata dictionaryMetadata = new DictionaryMetadata(termDictIdCounter++, 1);
 									dictionary.put(token.getTermText(), dictionaryMetadata);
+								}
+								
+								/* Add term to kgram index */
+								addTermToKgramIndex(token.getTermText(), termId);
+								
+								/* Keep track of this term so that it is not added to the document dictionary again */
+								termTrackerForThisDoc.add(token.getTermText());
+							} else {
+								if (dictionary.containsKey(token.getTermText())) {
+									termId = dictionary.get(token.getTermText()).getTermId();
+									/*- Increase overall term frequency in term-dictionary */
+									dictionary.get(token.getTermText()).setFrequency(dictionary.get(token.getTermText()).getFrequency() + 1);
 								}
 							}
 
@@ -460,9 +489,7 @@ public class IndexWriter {
 
 					/*- Increment the df counter only if this term 
 					 * is occuring in the doc for the first time */
-					if (termTrackerForThisDoc.contains(token.getTermText())) {
-						termTrackerForThisDoc.add(token.getTermText());
-					} else {
+					if (!termTrackerForThisDoc.contains(token.getTermText())) {
 						/*- Check if the dictionary already contains the
 						 * term. If yes, get the ID. If not, add the term
 						 * to the dictionary */
@@ -475,6 +502,18 @@ public class IndexWriter {
 						} else {
 							DictionaryMetadata dictionaryMetadata = new DictionaryMetadata(termDictIdCounter++, 1);
 							dictionary.put(token.getTermText(), dictionaryMetadata);
+						}
+						
+						/* Add term to kgram index */
+						addTermToKgramIndex(token.getTermText(), termId);
+						
+						/* Keep track of this term so that it is not added to the document dictionary again */
+						termTrackerForThisDoc.add(token.getTermText());
+					} else {
+						if (dictionary.containsKey(token.getTermText())) {
+							termId = dictionary.get(token.getTermText()).getTermId();
+							/*- Increase overall term frequency in term-dictionary */
+							dictionary.get(token.getTermText()).setFrequency(dictionary.get(token.getTermText()).getFrequency() + 1);
 						}
 					}
 
@@ -588,6 +627,24 @@ public class IndexWriter {
 			}
 		}
 	}
+	
+	private void writeKgramIndex(String kgramIndexFileName) throws IOException {
+		if (kgramIndex != null) {
+			File kgramFile = new File(indexDirectory + kgramIndexFileName);
+			if (kgramFile.exists())
+				kgramFile.delete();
+			kgramFile.createNewFile();
+
+			ObjectOutputStream kgramIndexWriter = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(kgramFile, true)));
+			if (kgramIndexWriter != null) {
+				/* Write the index */
+				kgramIndexWriter.writeObject(kgramIndex);
+
+				/* Close the writer */
+				kgramIndexWriter.close();
+			}
+		}		
+	}
 
 	private void writeIndexToFile(String indexFileNamePrefix, Map<Character, Map<Long, Map<Long, TermMetadataForThisDoc>>> index) throws IOException {
 		/* For indexes: Create the files */
@@ -635,6 +692,9 @@ public class IndexWriter {
 
 			/* Write the term dictionaries */
 			writeDictionaryToFile(dictionaryFileName, dictionary);
+			
+			/* Write k-gram index */
+			writeKgramIndex(kgramIndexFileName);
 
 			/* Write the indexes to files */
 			writeIndexToFile(termIndexFileNamePrefix, termIndex);
@@ -660,13 +720,18 @@ public class IndexWriter {
 			throw new IndexerException("IndexerException occured while writing to indexer files");
 		}
 	}
-	
-	public void addTermToKgramIndex(String term) {
+
+	public void addTermToKgramIndex(String term, long termId) {
 		if (term != null && term.length() > 0) {
-			if (term.length() <= kgramIndex.getK()) {
-//				kgramIndex.addToIndex(key, termId);
+			term = "$" + term + "$";
+			if (term.length() < kgramIndex.getK()) {
+				kgramIndex.addToIndex(term, termId);
 			} else {
-				
+				int windowStart = 0, k = kgramIndex.getK();
+				while (windowStart + k <= term.length()) {
+					String kgram = term.substring(windowStart++, windowStart + k - 1);
+					kgramIndex.addToIndex(kgram, termId);
+				}
 			}
 		}
 	}

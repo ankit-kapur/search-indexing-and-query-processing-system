@@ -118,6 +118,7 @@ public class Parser {
 						}
 					}
 				}
+				
 				/* Date */
 				int dateStartPosition = -1, dateEndPosition = -1;
 				pattern = Pattern.compile("[\\r\\n\\s]*");

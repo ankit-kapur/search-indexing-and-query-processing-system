@@ -205,8 +205,7 @@ public class Term extends Expression {
 						docMetaData.setTermMetaDataMap(termMetaDataMap);
 
 						/*- Add query-term to the list that holds every
-						 * term in the query
-						 */
+						 * term in the query */
 						if (!Query.getQueryTermList().keySet().contains(termId))
 							Query.addQueryTermToList(termId, zone);
 

@@ -3,11 +3,13 @@ package edu.buffalo.cse.irf14;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.StringTokenizer;
 
 import edu.buffalo.cse.irf14.index.IndexType;
 import edu.buffalo.cse.irf14.query.IndexesAndDictionaries;
@@ -32,6 +34,7 @@ public class SearchRunner {
 
 	char mode;
 	private PrintStream stream;
+	Query query;
 
 	/**
 	 * Default (and only public) constuctor
@@ -65,10 +68,10 @@ public class SearchRunner {
 		try {
 			ScoreModel scoreModel = null;
 			ModelFactory modelFactory = ModelFactory.getInstance();
-			
+
 			/* Start time */
 			long startTime = new Date().getTime();
-			Query query = QueryParser.parse(userQuery, "OR");
+			query = QueryParser.parse(userQuery, "OR");
 			// The above query object will contain ParsedQuery and
 			// PostingsList of the query
 			if (model.equals(ScoringModel.TFIDF)) {
@@ -77,22 +80,19 @@ public class SearchRunner {
 			if (model.equals(ScoringModel.OKAPI)) {
 				scoreModel = modelFactory.getModelForQuery(ScoringModel.OKAPI);
 			}
-			
+
 			/*- This query object will contain final relevant scores of the query */
 			query = scoreModel.calculateScore(query);
 			double queryTime = (new Date().getTime() - startTime) / 1000.0;
 
 			query.setQueryTime(String.valueOf(queryTime));
-			
 
 			/* Print ranked map */
 			for (long docId : query.getResultsMap().keySet()) {
 				System.out.println(IndexesAndDictionaries.getIndexByType(IndexType.TERM).getDocumentDictionary().get(docId).getDocumentName() + " -> score: " + query.getResultsMap().get(docId).getRelevancyScore() + " -> rank: " + query.getResultsMap().get(docId).getRank() + "\nTitle: " + query.getResultsMap().get(docId).getTitle() + "\nSnippet: " + query.getResultsMap().get(docId).getSnippet() + "\n");
 			}
 			System.out.println("Query execution time ==> " + queryTime + " seconds");
-			
-			
-			
+
 		} catch (QueryParserException e) {
 			e.printStackTrace();
 		} catch (ScorerException e) {
@@ -131,8 +131,8 @@ public class SearchRunner {
 
 					/* Start time */
 					long startTime = new Date().getTime();
-					
-					Query query = QueryParser.parse(queryMap.get(queryId), "OR");
+
+					query = QueryParser.parse(queryMap.get(queryId), "OR");
 					ScoreModel scoreModel = null;
 					ModelFactory modelFactory = ModelFactory.getInstance();
 					scoreModel = modelFactory.getModelForQuery(ScoringModel.OKAPI);
@@ -141,7 +141,7 @@ public class SearchRunner {
 					/* Set time taken by query */
 					double queryTime = (new Date().getTime() - startTime) / 1000.0;
 					query.setQueryTime(String.valueOf(queryTime));
-					
+
 					sbBuffer.append(queryId).append(":").append("{");
 					for (long docId : query.getResultsMap().keySet()) {
 						size++;
@@ -152,13 +152,12 @@ public class SearchRunner {
 					}
 					sbBuffer.append("}\n\r");
 
-
 					/* Print ranked map */
 					for (long docId : query.getResultsMap().keySet()) {
 						System.out.println(IndexesAndDictionaries.getIndexByType(IndexType.TERM).getDocumentDictionary().get(docId).getDocumentName() + " -> score: " + query.getResultsMap().get(docId).getRelevancyScore() + " -> rank: " + query.getResultsMap().get(docId).getRank() + "\nTitle: " + query.getResultsMap().get(docId).getTitle() + "\nSnippet: " + query.getResultsMap().get(docId).getSnippet() + "\n");
 					}
 					System.out.println("Query execution time ==> " + queryTime + " seconds");
-					
+
 				} catch (QueryParserException e) {
 					e.printStackTrace();
 				} catch (ScorerException e) {
@@ -191,7 +190,7 @@ public class SearchRunner {
 	 * @return true if supported, false otherwise
 	 */
 	public static boolean wildcardSupported() {
-		return false;
+		return true;
 	}
 
 	/**
@@ -201,7 +200,47 @@ public class SearchRunner {
 	 *         possible expansions as values if exist, null otherwise
 	 */
 	public Map<String, List<String>> getQueryTerms() {
-		return null;
+		String term = "sh*t";
+		List<String> kgrams = new ArrayList<String>();
+		int k = IndexesAndDictionaries.getKgramIndex().getK();
+
+		/* Break the query term down into kgrams */
+		if (term != null && term.length() > 0) {
+			if (term != null) {
+				if (term.charAt(0) != '*')
+					term = '$' + term;
+				if (term.length() > 0 && term.charAt(term.length()-1) != '*')
+					term = term + '$';
+			}
+			StringTokenizer tokenizer = new StringTokenizer(term, "*");
+			while (tokenizer.hasMoreTokens()) {
+				String token = tokenizer.nextToken();
+				if (token.length() < k) {
+					String kgram = token;
+					kgrams.add(kgram);
+				} else {
+
+					int windowStart = 0;
+					while (windowStart+k <= token.length()) {
+						String kgram = token.substring(windowStart++, windowStart + k - 1);
+						kgrams.add(kgram);
+					}
+				}
+			}
+		}
+		
+		/* Get term IDs corresponding to the kgrams, and intersect them */
+		Map<String, List<Long>> kgramMap = new HashMap<String, List<Long>>();
+		for (String kgram: kgrams) {
+			
+		}
+		
+		/* Get the term text corresponding to the IDs matched */
+		List<String> matchedTerms = new ArrayList<String>();
+		
+		Map<String, List<String>> map = new HashMap<String, List<String>>();
+		map.put(term, matchedTerms);
+		return map;
 	}
 
 	/**

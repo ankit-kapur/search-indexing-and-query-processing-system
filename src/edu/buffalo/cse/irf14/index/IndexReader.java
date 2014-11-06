@@ -25,6 +25,7 @@ import edu.buffalo.cse.irf14.analysis.util.TermMetadataForThisDoc;
 public class IndexReader {
 	public final String className = this.getClass().getName();
 
+	KgramIndex kgramIndex = null;
 	public Map<String, DictionaryMetadata> termDictionary = new HashMap<String, DictionaryMetadata>();
 	DocumentDictionary docDictionary = null;
 	public Map<Long, DocumentDictionaryEntry> documentDictionary = new HashMap<Long, DocumentDictionaryEntry>();
@@ -33,6 +34,7 @@ public class IndexReader {
 	Map<Character, ObjectInputStream> listOfReaders = null;
 	ObjectInputStream termDictionaryReader = null;
 	ObjectInputStream docuDictionaryReader = null;
+	ObjectInputStream kgramFileReader = null;
 
 	/**
 	 * Default constructor
@@ -95,10 +97,17 @@ public class IndexReader {
 				docDictionary = (DocumentDictionary) docuDictionaryReader.readObject();
 				documentDictionary = docDictionary.getDocumentDictionary();
 			}
+			
+			/* K-gram index */
+			File kgramFile = new File(indexDirectory + IndexWriter.kgramIndexFileName);
+			if (kgramFile.exists()) {
+				kgramFileReader = new ObjectInputStream(new BufferedInputStream(new FileInputStream(kgramFile)));
+				kgramIndex = (KgramIndex) kgramFileReader.readObject();
+			}
 
 			/* Get the index */
 			for (char c = 'a'; c <= 'z'; c++) {
-				File indexFileForAlphabet = new File(fileNamePrefix + c + ".txt");
+				File indexFileForAlphabet = new File(fileNamePrefix + c + IndexWriter.fileExtension);
 				if (indexFileForAlphabet.exists()) {
 					ObjectInputStream inputStream = null;
 					try {
@@ -115,7 +124,7 @@ public class IndexReader {
 				}
 			}
 			/* For miscellaneous terms */
-			File indexFileForAlphabet = new File(fileNamePrefix + "_" + ".txt");
+			File indexFileForAlphabet = new File(fileNamePrefix + "_" + IndexWriter.fileExtension);
 			if (indexFileForAlphabet.exists()) {
 				ObjectInputStream inputStream = null;
 				try {
@@ -141,7 +150,15 @@ public class IndexReader {
 			if (docuDictionaryReader != null) {
 				docuDictionaryReader.close();
 			}
+			if (kgramFileReader != null) {
+				kgramFileReader.close();
+			}
+			
 		}
+	}
+
+	public KgramIndex getKgramIndex() {
+		return kgramIndex;
 	}
 
 	/**
@@ -164,7 +181,6 @@ public class IndexReader {
 			e.printStackTrace();
 		}
 		return totalKeyTerms;
-		// TODO : YOU MUST IMPLEMENT THIS
 	}
 
 	/**
@@ -204,7 +220,6 @@ public class IndexReader {
 	 *         null otherwise.
 	 */
 	public Map<String, Integer> getPostings(String term) {
-		// TODO:YOU MUST IMPLEMENT THIS
 		Map<String, Integer> postingsMap = null;
 		long termId = -1, docId = -1;
 		Map<Long, TermMetadataForThisDoc> documentIdToObjectMap = null;
@@ -244,7 +259,6 @@ public class IndexReader {
 	 *         for invalid k values
 	 */
 	public List<String> getTopK(int k) {
-		// TODO YOU MUST IMPLEMENT THIS
 		List<String> finalList = new ArrayList<String>();
 		if (k == -1 || k == 0) {
 

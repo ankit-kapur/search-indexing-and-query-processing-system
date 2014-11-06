@@ -15,37 +15,53 @@ public class IndexTester {
 
 		String indexDir = System.getProperty("user.dir") + File.separator + "indexdir";
 
-		IndexReader categoryIndex = new IndexReader(indexDir, IndexType.CATEGORY);
-		IndexReader placeIndex = new IndexReader(indexDir, IndexType.PLACE);
-		IndexReader authorIndex = new IndexReader(indexDir, IndexType.AUTHOR);
+//		IndexReader categoryIndex = new IndexReader(indexDir, IndexType.CATEGORY);
+//		IndexReader placeIndex = new IndexReader(indexDir, IndexType.PLACE);
+//		IndexReader authorIndex = new IndexReader(indexDir, IndexType.AUTHOR);
 		IndexReader termIndex = new IndexReader(indexDir, IndexType.TERM);
 
-		System.out.println("Total number of docs: " + categoryIndex.getCorpusSize());
+		System.out.println("Total number of docs: " + termIndex.getCorpusSize());
 
 		System.out.println("\nDoc dictionary...");
-		Map<Long, DocumentDictionaryEntry> docDict = categoryIndex.getDocumentDictionary();
+		Map<Long, DocumentDictionaryEntry> docDict = termIndex.getDocumentDictionary();
 		for (long docId : docDict.keySet()) {
-			System.out.println("ID: " + docId + " -> Docname: " + docDict.get(docId));
+			System.out.println("ID: " + docId + " -> Docname: " + docDict.get(docId).getDocumentName());
 		}
 
 		System.out.println("\nTerm dictionary...");
-		Map<String, DictionaryMetadata> termDict = categoryIndex.getTermDictionary();
+		Map<String, DictionaryMetadata> termDict = termIndex.getTermDictionary();
 		for (String term : termDict.keySet()) {
-			System.out.println(term + " -> ID: " + termDict.get(term).getTermId() + " -> freq: " + termDict.get(term).getFrequency());
+//			if (term.toLowerCase().startsWith("adob"))
+				System.out.println(term + " -> ID: " + termDict.get(term).getTermId() + " -> freq: " + termDict.get(term).getFrequency());
 		}
 
-		System.out.println("\nCategory index...");
-		printIndex(categoryIndex, termDict, docDict);
-		System.out.println("\nAuthor index...");
-		printIndex(authorIndex, termDict, docDict);
-		System.out.println("\nPlace index...");
-		printIndex(placeIndex, termDict, docDict);
+//		KgramIndex kgramIndex = categoryIndex.getKgramIndex();
+//		Map<String, List<Long>> map = kgramIndex.getIndex();
+//		Set<String> set = map.keySet();
+//		Iterator<String> it = set.iterator();
+//		while (it.hasNext()) {
+//			String key = it.next();
+//			System.out.print(key + " -> ");
+//			List<Long> termIdList = kgramIndex.getIndex().get(key);
+//			for (Long termId: termIdList) {
+//				/* GET TERM STRING FROM TERM ID */
+//				System.out.print(getTermById(termId, termDict) + "(" + termId +  "), ");
+//			}
+//			System.out.println();
+//		}
+		
+//		System.out.println("\nCategory index...");
+//		printIndex(categoryIndex, termDict, docDict);
+//		System.out.println("\nAuthor index...");
+//		printIndex(authorIndex, termDict, docDict);
+//		System.out.println("\nPlace index...");
+//		printIndex(placeIndex, termDict, docDict);
 		System.out.println("\nTerm index...");
 		printIndex(termIndex, termDict, docDict);
 
 		/*- Display all info about the term such as postings list, positional
 		 * indexes, term frequency */
-		categoryIndex.getTermInformation();
+		termIndex.getTermInformation();
 	}
 
 	private static void printIndex(IndexReader index, Map<String, DictionaryMetadata> termDict, Map<Long, DocumentDictionaryEntry> docDict) {
@@ -59,7 +75,13 @@ public class IndexTester {
 						for (long docId : docIdMap.keySet()) {
 							TermMetadataForThisDoc termMetadata = docIdMap.get(docId);
 							String termText = getTermById(termId, termDict);
-							System.out.println(termText + " -> ID: " + termId + " -> doc: " + docDict.get(docId).getDocumentName() + " -> freq: " + termMetadata.getTermFrequency() + " -> pos: " + termMetadata.getPositions());
+//							if (termId == 6032 || termText.toLowerCase().startsWith("ado")) {
+								String docName = null;
+								DocumentDictionaryEntry meta = docDict.get(docId);
+								if (meta != null) 
+									docName = meta.getDocumentName();
+								System.out.println(termText + " -> ID: " + termId + " -> doc: " + docName + " -> freq: " + (termMetadata != null ? termMetadata.getTermFrequency() : "null") + " -> pos: " + (termMetadata != null ? termMetadata.getPositions() : " "));
+//							}
 						}
 					}
 				}

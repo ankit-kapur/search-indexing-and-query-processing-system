@@ -1,11 +1,14 @@
 package edu.buffalo.cse.irf14.index;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class KgramIndex {
+public class KgramIndex implements Serializable {
+	private static final long serialVersionUID = 4448075148884415796L;
+	
 	int k;
 	Map<String, List<Long>> index;
 
@@ -26,7 +29,8 @@ public class KgramIndex {
 		if (index.containsKey(key)) {
 			/* Already exists. Add termId to the list */
 			List<Long> list = index.get(key);
-			list.add(termId);
+			if (!list.contains(termId))
+				list.add(termId);
 			index.put(key, list);
 		} else {
 			/* New entry */

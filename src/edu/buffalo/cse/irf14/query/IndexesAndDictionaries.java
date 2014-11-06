@@ -5,6 +5,7 @@ import java.util.Scanner;
 
 import edu.buffalo.cse.irf14.index.IndexReader;
 import edu.buffalo.cse.irf14.index.IndexType;
+import edu.buffalo.cse.irf14.index.KgramIndex;
 import edu.buffalo.cse.irf14.scoring.ScorerException;
 
 public class IndexesAndDictionaries {
@@ -14,6 +15,8 @@ public class IndexesAndDictionaries {
 	static IndexReader categoryIndex;
 	static IndexReader termIndex;
 
+	static KgramIndex kgramIndex;
+
 	static String corpusDir;
 
 	public static void readIndexes(String indexDir) {
@@ -21,6 +24,14 @@ public class IndexesAndDictionaries {
 		authorIndex = new IndexReader(indexDir, IndexType.AUTHOR);
 		categoryIndex = new IndexReader(indexDir, IndexType.CATEGORY);
 		termIndex = new IndexReader(indexDir, IndexType.TERM);
+
+		if (termIndex != null) {
+			kgramIndex = termIndex.getKgramIndex();
+		}
+	}
+
+	public static KgramIndex getKgramIndex() {
+		return kgramIndex;
 	}
 
 	public static IndexReader getIndexByType(IndexType indexType) {
