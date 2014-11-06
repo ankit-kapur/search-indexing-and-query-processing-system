@@ -12,6 +12,7 @@ import java.util.Scanner;
 import java.util.StringTokenizer;
 
 import edu.buffalo.cse.irf14.index.IndexType;
+import edu.buffalo.cse.irf14.index.KgramIndex;
 import edu.buffalo.cse.irf14.query.IndexesAndDictionaries;
 import edu.buffalo.cse.irf14.query.Query;
 import edu.buffalo.cse.irf14.query.QueryParser;
@@ -19,6 +20,7 @@ import edu.buffalo.cse.irf14.query.QueryParserException;
 import edu.buffalo.cse.irf14.scoring.ModelFactory;
 import edu.buffalo.cse.irf14.scoring.ScoreModel;
 import edu.buffalo.cse.irf14.scoring.ScorerException;
+import edu.buffalo.cse.irf14.scoring.ScorerUtils;
 
 /**
  * Main class to run the searcher. As before implement all TODO methods unless
@@ -35,6 +37,7 @@ public class SearchRunner {
 	char mode;
 	private PrintStream stream;
 	Query query;
+	String wildCardTerm;
 
 	/**
 	 * Default (and only public) constuctor
@@ -71,6 +74,28 @@ public class SearchRunner {
 
 			/* Start time */
 			long startTime = new Date().getTime();
+
+			/* Any wildcard terms present? */
+			if (userQuery.contains("*") || userQuery.contains("?")) {
+				while (userQuery.contains("*")) {
+					int asteriskPos = userQuery.indexOf("*");
+
+					wildCardTerm = extractTerm(userQuery, asteriskPos, '*');
+					Map<String, List<String>> matchedTermMap = getQueryTerms();
+					List<String> matchedTermList = matchedTermMap.get(wildCardTerm);
+					if (matchedTermList == null || matchedTermList.isEmpty()) {
+						throw new ScorerException("No wildcard expansions found in corpus for term: " + wildCardTerm);
+					}
+					String expandedString = "(";
+					for (String termMatched : matchedTermList)
+						expandedString += termMatched + " ";
+					expandedString = expandedString.trim() + ")";
+
+					/* Replace the wildcard term with the expanded string */
+					userQuery = userQuery.replace(wildCardTerm, expandedString);
+				}
+			}
+
 			query = QueryParser.parse(userQuery, "OR");
 			// The above query object will contain ParsedQuery and
 			// PostingsList of the query
@@ -99,6 +124,43 @@ public class SearchRunner {
 			e.printStackTrace();
 		}
 
+	}
+
+	private static String extractTerm(String userQuery, int pos, char wildChar) {
+		String extractedTerm = "";
+		boolean doneWithLeft = false, doneWithRight = false;
+		extractedTerm = Character.toString(wildChar);
+		int leftPos = pos, rightPos = pos;
+
+		while (!doneWithLeft) {
+			leftPos--;
+			if (leftPos < 0) {
+				doneWithLeft = true;
+			} else {
+				char leftChar = userQuery.charAt(leftPos);
+				if (leftChar == '(' || leftChar == ' ' || leftChar == ')' || leftChar == '[' || leftChar == ']' || leftChar == ':') {
+					doneWithLeft = true;
+				} else {
+					extractedTerm = leftChar + extractedTerm;
+				}
+			}
+		}
+
+		while (!doneWithRight) {
+			rightPos++;
+			if (rightPos >= userQuery.length()) {
+				doneWithRight = true;
+			} else {
+				char rightChar = userQuery.charAt(rightPos);
+				if (rightChar == '(' || rightChar == ' ' || rightChar == ')' || rightChar == '[' || rightChar == ']' || rightChar == ':') {
+					doneWithRight = true;
+				} else {
+					extractedTerm = extractedTerm + rightChar;
+				}
+			}
+		}
+
+		return extractedTerm;
 	}
 
 	/*
@@ -200,16 +262,19 @@ public class SearchRunner {
 	 *         possible expansions as values if exist, null otherwise
 	 */
 	public Map<String, List<String>> getQueryTerms() {
-		String term = "sh*t";
+		String term = wildCardTerm;
+
 		List<String> kgrams = new ArrayList<String>();
-		int k = IndexesAndDictionaries.getKgramIndex().getK();
+		KgramIndex kgramIndexObj = IndexesAndDictionaries.getKgramIndex();
+		Map<String, List<Long>> kgramIndex = kgramIndexObj.getIndex();
+		int k = kgramIndexObj.getK();
 
 		/* Break the query term down into kgrams */
 		if (term != null && term.length() > 0) {
 			if (term != null) {
 				if (term.charAt(0) != '*')
 					term = '$' + term;
-				if (term.length() > 0 && term.charAt(term.length()-1) != '*')
+				if (term.length() > 0 && term.charAt(term.length() - 1) != '*')
 					term = term + '$';
 			}
 			StringTokenizer tokenizer = new StringTokenizer(term, "*");
@@ -221,25 +286,52 @@ public class SearchRunner {
 				} else {
 
 					int windowStart = 0;
-					while (windowStart+k <= token.length()) {
+					while (windowStart + k <= token.length()) {
 						String kgram = token.substring(windowStart++, windowStart + k - 1);
 						kgrams.add(kgram);
 					}
 				}
 			}
 		}
-		
+
+		/* List that contains terms corresponding to the IDs intersected */
+		List<Long> matchedTermIDs = new ArrayList<Long>();
+
 		/* Get term IDs corresponding to the kgrams, and intersect them */
-		Map<String, List<Long>> kgramMap = new HashMap<String, List<Long>>();
-		for (String kgram: kgrams) {
-			
+		if (kgrams != null && kgrams.size() > 0) {
+			String firstKgram = kgrams.get(0);
+			matchedTermIDs = kgramIndex.get(firstKgram);
+			if (matchedTermIDs != null) {
+				for (int i = 1; i < kgrams.size(); i++) {
+					String kgram = kgrams.get(i);
+					List<Long> termIDsForThisKgram = kgramIndex.get(kgram);
+
+					List<Long> removalList = new ArrayList<Long>();
+					if (termIDsForThisKgram != null) {
+						for (Long id : matchedTermIDs) {
+							if (!termIDsForThisKgram.contains(id))
+								removalList.add(id);
+						}
+					} else {
+						/* Remove everything if nothing matched here */ 
+						removalList = matchedTermIDs;
+					}
+
+					matchedTermIDs.removeAll(removalList);
+				}
+			}
 		}
-		
-		/* Get the term text corresponding to the IDs matched */
+
+		/* List that contains terms corresponding to the IDs intersected */
 		List<String> matchedTerms = new ArrayList<String>();
-		
+		if (matchedTermIDs != null) {
+		for (long termId : matchedTermIDs) {
+			String termString = ScorerUtils.getTermById(termId, IndexesAndDictionaries.getIndexByType(IndexType.TERM).getTermDictionary());
+			matchedTerms.add(termString);
+		} }
+
 		Map<String, List<String>> map = new HashMap<String, List<String>>();
-		map.put(term, matchedTerms);
+		map.put(wildCardTerm, matchedTerms);
 		return map;
 	}
 

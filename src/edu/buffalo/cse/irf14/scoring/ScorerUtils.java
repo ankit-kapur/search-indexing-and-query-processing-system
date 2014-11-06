@@ -116,7 +116,11 @@ public class ScorerUtils {
 				/* By default, take the snippet as the first few lines */
 				if (docContents.indexOf(title) > 0) {
 					String contentAfterTitle = docContents.substring(docContents.indexOf(title) + title.length());
-					snippet = contentAfterTitle.substring(0, snippetLength);
+					if (snippetLength < contentAfterTitle.length()) {
+						snippet = contentAfterTitle.substring(0, snippetLength);
+					} else {
+						snippet = contentAfterTitle;
+					}
 				}
 			}
 

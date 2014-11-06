@@ -27,7 +27,7 @@ import edu.buffalo.cse.irf14.document.FieldNames;
 public class IndexWriter {
 
 	/* k-gram index */
-	public static int k = 3;
+	public static int k = 2;
 	KgramIndex kgramIndex = new KgramIndex(k);
 
 	/* Data structures for dictionaries and indexes */
